@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useState } from "react";
+import MealItem from "./MealItem";
 
 
 export default function Meals() {
@@ -19,7 +20,11 @@ export default function Meals() {
     },[]);
 
     // if we call fetchMeals here, it will be called on every render, so we need to use useEffect
-    return( <ul id="meals">{loadedMeals.map((meal) => (<li key={meal.id}>{meal.name}</li>
+    return( 
+    <ul id="meals">
+        {loadedMeals.map((meal) => (
+    <MealItem key={meal.id} meal={meal}/>
+
     ))}
         {/* <button onClick={fetchMeals}>Fetch Meals</button> */}
     </ul>
