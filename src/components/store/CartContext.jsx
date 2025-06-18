@@ -39,7 +39,7 @@ function cartReducer(state, action) {
             updatedItems.splice(existingCartItemIndex, 1); // remove the item from the array
         }
         else {
-            updatedItem = {
+            const updatedItem = {
                 ...existingCartItem,
                 quantity: existingCartItem.quantity - 1,
             }
@@ -63,7 +63,7 @@ export function CartContextProvider({ children }) {
         
     }
     function removeItem(id){
-        dispatchCartAction({ type: 'REMOVE_ITEM', item: id });
+        dispatchCartAction({ type: 'REMOVE_ITEM', id });
     }
 
     const cartContext = {
