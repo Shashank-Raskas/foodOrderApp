@@ -19,9 +19,27 @@ export default function Checkout({ item, onRemove, onAdd }) {
         userProgresCtx.hideCheckout();
     }
 
+    function handleSubmit(event) {
+        event.preventDefault(); // Prevent the default form submission behavior
+        // Here you would typically handle the form submission, e.g., send data to a server
+        console.log("Form submitted");
+        userProgresCtx.hideCheckout(); // Close the checkout modal after submission
+        const fd = new FormData(event.target); // Get the form data
+        // const customerData = {
+        //     fullName: fd.get('full-name'),
+        //     email: fd.get('email'),
+        //     street: fd.get('street'),
+        //     postalCode: fd.get('postal-code'),
+        //     city: fd.get('city')
+        // };
+        const customerData = Object.fromEntries(fd.entries()); // Convert FormData to an object
+
+        
+    }
+
     return (
         <Modal open={userProgresCtx.progress === 'checkout'} onClose={handleClose}>
-        <form>
+        <form onSubmit ={handleSubmit}>
             <h2>Checkout</h2>
             <p>Total Amount: {currencyFormatter.format(cartTotal)}</p>
             <p>Are you sure you want to proceed with the checkout?</p>
