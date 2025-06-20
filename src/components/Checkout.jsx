@@ -34,7 +34,19 @@ export default function Checkout({ item, onRemove, onAdd }) {
         // };
         const customerData = Object.fromEntries(fd.entries()); // Convert FormData to an object
 
-        
+        fetch('http://localhost:3000/orders', {  //!fetch by default uses GET method, so we need to specify the method as POST
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                order: {
+                    items: cartCtx.items,
+                customer: customerData,
+                totalAmount: cartTotal
+            }
+            }),
+        });
     }
 
     return (
@@ -42,8 +54,8 @@ export default function Checkout({ item, onRemove, onAdd }) {
         <form onSubmit ={handleSubmit}>
             <h2>Checkout</h2>
             <p>Total Amount: {currencyFormatter.format(cartTotal)}</p>
-            <p>Are you sure you want to proceed with the checkout?</p>
-            <Input label='Full Name' type = 'text' id='full-name'/>
+            <p>Are you sure you want to proceed with the checkout?</p>  //!id should match with backend field names
+            <Input label='Full Name' type = 'text' id='name'/>
             <Input label='E-mail Address' type = 'email' id='email'/>
             <Input label='Street' type='text' id='street'/>
             <div className="control-row">
