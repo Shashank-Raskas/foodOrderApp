@@ -1,1 +1,31 @@
-[{"items":[{"id":"m2","name":"Margherita Pizza","price":"12.99","description":"A classic pizza with fresh mozzarella, tomatoes, and basil on a thin and crispy crust.","image":"images/margherita-pizza.jpg","quantity":3},{"id":"m1","name":"Mac & Cheese","price":"8.99","description":"Creamy cheddar cheese mixed with perfectly cooked macaroni, topped with crispy breadcrumbs. A classic comfort food.","image":"images/mac-and-cheese.jpg","quantity":4}],"customer":{"name":"shashank","email":"shashankrk20@gmail.com","street":"2-73 gandhamguda hydershakote","postal-code":"500028","city":"Hyderabad"},"totalAmount":74.93,"id":"509.4415300091246"},{"items":[{"id":"m2","name":"Margherita Pizza","price":"12.99","description":"A classic pizza with fresh mozzarella, tomatoes, and basil on a thin and crispy crust.","image":"images/margherita-pizza.jpg","quantity":3},{"id":"m1","name":"Mac & Cheese","price":"8.99","description":"Creamy cheddar cheese mixed with perfectly cooked macaroni, topped with crispy breadcrumbs. A classic comfort food.","image":"images/mac-and-cheese.jpg","quantity":4}],"customer":{"name":"shashank","email":"shashankrk20@gmail.com","street":"2-73 gandhamguda hydershakote","postal-code":"500028","city":"Hyderabad"},"totalAmount":74.93,"id":"829.1403193091562"}]
+[
+    {
+        "items": [
+            {
+                "id": "m2",
+                "name": "Margherita Pizza",
+                "price": "12.99",
+                "description": "A classic pizza with fresh mozzarella, tomatoes, and basil on a thin and crispy crust.",
+                "image": "images/margherita-pizza.jpg",
+                "quantity": 3
+            },
+            {
+                "id": "m1",
+                "name": "Mac & Cheese",
+                "price": "8.99",
+                "description": "Creamy cheddar cheese mixed with perfectly cooked macaroni, topped with crispy breadcrumbs. A classic comfort food.",
+                "image": "images/mac-and-cheese.jpg",
+                "quantity": 4
+            }
+        ],
+        "customer": {
+            "name": "shashank",
+            "email": "shashankrk20@gmail.com",
+            "street": "2-73 gandhamguda hydershakote",
+            "postal-code": "500028",
+            "city": "Hyderabad"
+        },
+        "totalAmount": 74.93,
+        "id": "509.4415300091246"
+    }
+]
