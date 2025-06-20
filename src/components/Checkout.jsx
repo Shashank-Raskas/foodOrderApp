@@ -1,4 +1,4 @@
-import { useContext } from "react";   // for using the context 
+import { useContext,useActionState } from "react";   // for using the context 
 import Modal from "./UI/Modal";
 import CartContext from "./store/CartContext";  // to access the cart context without using props
 import { currencyFormatter } from "../util/formatting";
@@ -20,7 +20,7 @@ export default function Checkout({ item, onRemove, onAdd }) {
     const cartCtx = useContext(CartContext);
     const userProgresCtx = useContext(UserProgressContext)
 
-    const {data, isLoading: isSending, error, sendRequest,clearData} = useHttp('http://localhost:3000/orders', requestConfig);
+    const {data, error, sendRequest,clearData} = useHttp('http://localhost:3000/orders', requestConfig);
     const cartTotal = cartCtx.items.reduce((totalPrice, item) => totalPrice + item.quantity * item.price,
         0
     );
@@ -35,12 +35,12 @@ export default function Checkout({ item, onRemove, onAdd }) {
         clearData(); // Clear the data after the checkout is finished
     }
 
-    function handleSubmit(event) {
-        event.preventDefault(); // Prevent the default form submission behavior
+    async function checkoutAction(prevState,fd) {
+        // event.preventDefault(); // Prevent the default form submission behavior
         // Here you would typically handle the form submission, e.g., send data to a server
         console.log("Form submitted");
         // userProgresCtx.hideCheckout(); // Close the checkout modal after submission
-        const fd = new FormData(event.target); // Get the form data
+        // const fd = new FormData(event.target); // Get the form data manually from the event target
         // const customerData = {
         //     fullName: fd.get('full-name'),
         //     email: fd.get('email'),
@@ -50,7 +50,7 @@ export default function Checkout({ item, onRemove, onAdd }) {
         // };
         const customerData = Object.fromEntries(fd.entries()); // Convert FormData to an object
 
-        sendRequest(JSON.stringify({
+        await sendRequest(JSON.stringify({
             order: {
                 items: cartCtx.items,
             customer: customerData
@@ -58,21 +58,22 @@ export default function Checkout({ item, onRemove, onAdd }) {
     })
 );
 
-    //     fetch('http://localhost:3000/orders', {  //!fetch by default uses GET method, so we need to specify the method as POST
-    //         method: 'POST',
-    //         headers: {
+//     fetch('http://localhost:3000/orders', {  //!fetch by default uses GET method, so we need to specify the method as POST
+//         method: 'POST',
+//         headers: {
     //             'Content-Type': 'application/json',  //!commented as we are using useHttp hook
     //         },
     //         body: JSON.stringify({
-    //             order: {
-    //                 items: cartCtx.items,
-    //             customer: customerData,
-    //             totalAmount: cartTotal
-    //         }
-    //         }),
-    //     });
-    }
-
+        //             order: {
+            //                 items: cartCtx.items,
+            //             customer: customerData,
+            //             totalAmount: cartTotal
+            //         }
+            //         }),
+            //     });
+        }
+        const [formState,formAction,isSending] = useActionState(checkoutAction, null)
+            
     let actions = (
         <>
         <Button type='button' textOnly onClick={handleClose}>Close</Button>
@@ -98,7 +99,7 @@ export default function Checkout({ item, onRemove, onAdd }) {
     }
     return (
         <Modal open={userProgresCtx.progress === 'checkout'} onClose={handleClose}>
-        <form onSubmit ={handleSubmit}>
+        <form action={formAction}>
             <h2>Checkout</h2>
             <p>Total Amount: {currencyFormatter.format(cartTotal)}</p>
             <p>Are you sure you want to proceed with the checkout?</p>  //!id should match with backend field names
