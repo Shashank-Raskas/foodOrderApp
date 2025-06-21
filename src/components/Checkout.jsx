@@ -19,8 +19,8 @@ export default function Checkout({ item, onRemove, onAdd }) {
 
     const cartCtx = useContext(CartContext);
     const userProgresCtx = useContext(UserProgressContext)
-
-    const {data, error, sendRequest,clearData} = useHttp('http://localhost:3000/orders', requestConfig);
+    //use http://localhost:3000 when running on local
+    const {data, error, sendRequest,clearData} = useHttp('https://orderapp-backend-czwe.onrender.com/orders', requestConfig);
     const cartTotal = cartCtx.items.reduce((totalPrice, item) => totalPrice + item.quantity * item.price,
         0
     );

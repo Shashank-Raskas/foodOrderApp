@@ -12,8 +12,8 @@ export default function Meals() {
     data: loadedMeals,
     isLoading,
     error,
-   } =  useHttp("http://localhost:3000/meals", requestConfig , []); //defined requestConfig ouside the component to avoid re-creating it on every render
-
+   } =  useHttp("https://orderapp-backend-czwe.onrender.com/meals", requestConfig , []); //defined requestConfig ouside the component to avoid re-creating it on every render
+      //!use http://localhost:3000 when running on local
     // if error occurs, we can show it to the user
     if (isLoading) {
         return <p className="center">Fetching Meals...</p>;
