@@ -1,6 +1,15 @@
-// backend/firebase.js
+import fs from 'node:fs/promises';
 import admin from 'firebase-admin';
-import serviceAccount from './service-account-key.json' assert { type: 'json' };
+
+let serviceAccount;
+
+try {
+  const json = await fs.readFile('./service-account-key.json', 'utf8');
+  serviceAccount = JSON.parse(json);
+} catch (error) {
+  console.error('Failed to load Firebase credentials:', error);
+  process.exit(1);
+}
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
