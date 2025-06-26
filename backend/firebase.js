@@ -1,18 +1,27 @@
-import fs from 'node:fs/promises';
 import admin from 'firebase-admin';
+import fs from 'node:fs/promises';
 
 let serviceAccount;
 
 try {
-  const json = await fs.readFile('./service-account-key.json', 'utf8');
-  serviceAccount = JSON.parse(json);
+  // Check if running on Render with FIREBASE_CREDENTIALS env var
+  if (process.env.FIREBASE_CREDENTIALS) {
+    serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+  } else {
+    // Local development fallback: load JSON file
+    const json = await fs.readFile('./service-account-key.json', 'utf8');
+    serviceAccount = JSON.parse(json);
+  }
 } catch (error) {
-  console.error('Failed to load Firebase credentials:', error);
+  console.error('❌ Failed to load Firebase credentials:', error);
   process.exit(1);
 }
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+}
 
-export default admin.firestore();
+const db = admin.firestore();
+export default db;
