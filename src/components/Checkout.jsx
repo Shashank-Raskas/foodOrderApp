@@ -102,7 +102,7 @@ export default function Checkout({ item, onRemove, onAdd }) {
         <form action={formAction}>
             <h2>Checkout</h2>
             <p>Total Amount: {currencyFormatter.format(cartTotal)}</p>
-            <p>Are you sure you want to proceed with the checkout?</p>  //!id should match with backend field names
+            <p>Are you sure you want to proceed with the checkout?</p>  
             <Input label='Full Name' type = 'text' id='name'/>
             <Input label='E-mail Address' type = 'email' id='email'/>
             <Input label='Street' type='text' id='street'/>
@@ -110,6 +110,7 @@ export default function Checkout({ item, onRemove, onAdd }) {
                 <Input label='Postal Code' type='text' id='postal-code'/>
                 <Input label='City' type='text' id='city'/>
             </div>
+            {/* //!id should match with backend field names */}
             {/* <ul>
                 <li>{item.name} - {item.quantity} x {item.price}</li>
             </ul>
