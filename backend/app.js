@@ -11,10 +11,14 @@ app.use(bodyParser.json());
 app.use(express.static('public'));
 
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', 'https://foodorderapp-99re.onrender.com');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   next();
+});
+
+app.options('*', (req, res) => {
+  res.sendStatus(200);
 });
 
 app.get('/meals', async (req, res) => {
