@@ -1,4 +1,4 @@
-export const currencyFormatter = new Intl.NumberFormat("en-US", {
+export const currencyFormatter = new Intl.NumberFormat("en-IN", {
     style:'currency',
-    currency: 'USD',
+    currency: 'INR',
 });
