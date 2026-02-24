@@ -271,6 +271,18 @@ h1 {
   margin: 0;
 }
 
+.input-error {
+  border-color: #f9b8b8 !important;
+  background-color: rgba(249, 184, 184, 0.1) !important;
+}
+
+.error-text {
+  display: block;
+  color: #f9b8b8;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
 @keyframes fade-slide-up {
   from {
     opacity: 0;

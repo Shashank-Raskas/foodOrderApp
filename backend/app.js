@@ -1,26 +1,32 @@
 import fs from 'node:fs/promises';
-
+import dotenv from 'dotenv';
 import bodyParser from 'body-parser';
 import express from 'express';
+import { v4 as uuidv4 } from 'uuid';
 import db from './firebase.js'; // add this import
 
+// Load environment variables
+dotenv.config({ path: `.env.${process.env.NODE_ENV || 'development'}` });
 
 const app = express();
 
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
+// Secure CORS configuration
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(',');
+
 app.use((req, res, next) => {
-  // res.setHeader('Access-Control-Allow-Origin', 'https://foodorderapp-99re.onrender.com');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+  const origin = req.headers.origin;
+  
+  if (ALLOWED_ORIGINS.includes(origin) || ALLOWED_ORIGINS.includes('*')) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  }
+  
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   next();
 });
-
-// app.options('*', (req, res) => {
-//   res.sendStatus(200);
-// });
 
 app.get('/meals', async (req, res) => {
   const meals = await fs.readFile('./data/available-meals.json', 'utf8');
@@ -30,8 +36,6 @@ app.get('/meals', async (req, res) => {
 
 app.post('/orders', async (req, res) => {
   const orderData = req.body.order;
-
-  await new Promise((resolve) => setTimeout(resolve, 1000));
 
   if (!orderData || !orderData.items || orderData.items.length === 0) {
     return res.status(400).json({ message: 'Missing data.' });
@@ -52,7 +56,7 @@ app.post('/orders', async (req, res) => {
 
   const newOrder = {
     ...orderData,
-    id: (Math.random() * 1000).toString(),
+    id: uuidv4(),
     createdAt: new Date().toISOString()
   };
 
