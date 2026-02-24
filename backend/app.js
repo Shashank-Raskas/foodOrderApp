@@ -13,25 +13,58 @@ const app = express();
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
-// Secure CORS configuration
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(',').map(origin => origin.trim());
-
-// Add more permissive CORS for development and cloud
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
+// Smart CORS configuration - Auto-allow same domain + localhost
+const configureCORS = () => {
+  // Start with explicit env configuration if provided
+  let allowedOrigins = [];
   
-  // Allow if origin is in whitelist or if any origin is whitelisted with *
-  if (ALLOWED_ORIGINS.includes('*') || ALLOWED_ORIGINS.some(allowed => origin && origin.includes(allowed))) {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  if (process.env.ALLOWED_ORIGINS) {
+    allowedOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
   }
   
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  // Always allow localhost/127.0.0.1 for development
+  allowedOrigins.push('http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173');
   
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
+  console.log('[CORS] Configured allowed origins:', allowedOrigins);
+  
+  return allowedOrigins;
+};
+
+const ALLOWED_ORIGINS = configureCORS();
+
+// CORS Middleware - Handle both preflight and actual requests
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const requestMethod = req.method;
+  
+  // Check if origin is allowed
+  const isOriginAllowed = ALLOWED_ORIGINS.some(allowed => {
+    if (allowed === '*') return true;
+    if (origin === allowed) return true;
+    // For Render apps, allow any onrender.com domain to any onrender.com domain
+    if (origin && allowed && origin.includes('onrender.com') && allowed.includes('onrender.com')) {
+      return true;
+    }
+    return false;
+  });
+  
+  // Set CORS headers if origin is allowed
+  if (isOriginAllowed || !origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24 hours
+  }
+  
+  // Immediately respond to preflight requests
+  if (requestMethod === 'OPTIONS') {
     return res.sendStatus(200);
+  }
+  
+  // For actual requests, log if CORS would have failed
+  if (!isOriginAllowed && origin) {
+    console.warn(`[CORS] Blocked request from origin: ${origin}`);
   }
   
   next();
