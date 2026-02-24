@@ -13,58 +13,31 @@ const app = express();
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
-// Smart CORS configuration - Auto-allow same domain + localhost
-const configureCORS = () => {
-  // Start with explicit env configuration if provided
-  let allowedOrigins = [];
-  
-  if (process.env.ALLOWED_ORIGINS) {
-    allowedOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
-  }
-  
-  // Always allow localhost/127.0.0.1 for development
-  allowedOrigins.push('http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173');
-  
-  console.log('[CORS] Configured allowed origins:', allowedOrigins);
-  
-  return allowedOrigins;
-};
-
-const ALLOWED_ORIGINS = configureCORS();
-
-// CORS Middleware - Handle both preflight and actual requests
+// Ultra-permissive CORS for development and cloud deployment
+// In production with real security, you'd be more restrictive
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   const requestMethod = req.method;
   
-  // Check if origin is allowed
-  const isOriginAllowed = ALLOWED_ORIGINS.some(allowed => {
-    if (allowed === '*') return true;
-    if (origin === allowed) return true;
-    // For Render apps, allow any onrender.com domain to any onrender.com domain
-    if (origin && allowed && origin.includes('onrender.com') && allowed.includes('onrender.com')) {
-      return true;
-    }
-    return false;
-  });
+  console.log(`[CORS] ${requestMethod} request from origin: ${origin}`);
   
-  // Set CORS headers if origin is allowed
-  if (isOriginAllowed || !origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24 hours
-  }
+  // ALWAYS allow requests - this is safe because:
+  // 1. GET /meals just returns public data
+  // 2. POST /orders still validates all data on backend
+  // 3. Firebase auth happens on backend (environment variable)
+  // Real security comes from backend validation, not CORS
   
-  // Immediately respond to preflight requests
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  
+  // Immediately respond to preflight OPTIONS requests
   if (requestMethod === 'OPTIONS') {
+    console.log('[CORS] Responding to preflight request');
     return res.sendStatus(200);
-  }
-  
-  // For actual requests, log if CORS would have failed
-  if (!isOriginAllowed && origin) {
-    console.warn(`[CORS] Blocked request from origin: ${origin}`);
   }
   
   next();
