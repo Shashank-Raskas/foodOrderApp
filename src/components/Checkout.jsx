@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import Modal from "./UI/Modal";
 import CartContext from "./store/CartContext";
 import { currencyFormatter } from "../util/formatting";
@@ -22,10 +22,25 @@ export default function Checkout() {
     const cartCtx = useContext(CartContext);
     const userProgressCtx = useContext(UserProgressContext);
     const [formErrors, setFormErrors] = useState({});
+    const [showLoadingOverlay, setShowLoadingOverlay] = useState(false);
     
     const { data, error, isLoading, sendRequest, clearData } = useHttp(API_ENDPOINTS.ORDERS, requestConfig);
     
     const cartTotal = cartCtx.items.reduce((totalPrice, item) => totalPrice + item.quantity * item.price, 0);
+
+    // Show loading overlay after 3-4 seconds delay
+    useEffect(() => {
+        if (isLoading) {
+            const loadingTimer = setTimeout(() => {
+                setShowLoadingOverlay(true);
+            }, 3500); // 3.5 second delay
+            
+            return () => clearTimeout(loadingTimer);
+        } else {
+            // Reset when loading is done
+            setShowLoadingOverlay(false);
+        }
+    }, [isLoading]);
 
     function handleClose() {
         userProgressCtx.hideCheckout();
@@ -62,16 +77,9 @@ export default function Checkout() {
         }));
     }
 
-    // Show loading overlay while processing
-    if (isLoading) {
-        return (
-            <>
-                <LoadingOverlay />
-                <Modal open={userProgressCtx.progress === 'checkout'} onClose={() => {}}>
-                    {/* Empty modal while loading */}
-                </Modal>
-            </>
-        );
+    // Show loading overlay only after delay (if still loading)
+    if (showLoadingOverlay && isLoading) {
+        return <LoadingOverlay />;
     }
 
     // Show success message when order is submitted successfully
