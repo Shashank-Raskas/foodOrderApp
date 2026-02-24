@@ -7,6 +7,7 @@ import Button from "./UI/Button";
 import UserProgressContext from "./store/UserProgressContext";
 import useHttp from "../hooks/useHttp";
 import Error from "./Error";
+import LoadingOverlay from "./UI/LoadingOverlay";
 import { API_ENDPOINTS } from "../config/api";
 import { validateCheckoutForm, hasErrors } from "../util/validation";
 
@@ -22,7 +23,7 @@ export default function Checkout() {
     const userProgressCtx = useContext(UserProgressContext);
     const [formErrors, setFormErrors] = useState({});
     
-    const { data, error, sendRequest, clearData } = useHttp(API_ENDPOINTS.ORDERS, requestConfig);
+    const { data, error, isLoading, sendRequest, clearData } = useHttp(API_ENDPOINTS.ORDERS, requestConfig);
     
     const cartTotal = cartCtx.items.reduce((totalPrice, item) => totalPrice + item.quantity * item.price, 0);
 
@@ -61,6 +62,19 @@ export default function Checkout() {
         }));
     }
 
+    // Show loading overlay while processing
+    if (isLoading) {
+        return (
+            <>
+                <LoadingOverlay />
+                <Modal open={userProgressCtx.progress === 'checkout'} onClose={() => {}}>
+                    {/* Empty modal while loading */}
+                </Modal>
+            </>
+        );
+    }
+
+    // Show success message when order is submitted successfully
     if (data && !error) {
         return (
             <Modal open={userProgressCtx.progress === 'checkout'} onClose={handleFinish}>
@@ -74,6 +88,7 @@ export default function Checkout() {
         );
     }
 
+    // Show checkout form
     return (
         <Modal open={userProgressCtx.progress === 'checkout'} onClose={handleClose}>
             <form onSubmit={handleSubmit}>
