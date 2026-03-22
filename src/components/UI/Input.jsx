@@ -5,7 +5,6 @@ export default function Input ({label, id, error, ...props}) {
             <input 
                 id={id} 
                 name={id} 
-                required 
                 {...props} 
                 className={error ? 'input-error' : ''}
             />
