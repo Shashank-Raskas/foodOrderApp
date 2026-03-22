@@ -168,8 +168,9 @@
     font-size: 14px;
     color: #c9bfb5;
     line-height: 1.6;
-    margin: 20px 0 0 0;
-    max-width: 250px;
+    margin: 20px auto 0 auto;
+    max-width: 280px;
+    text-align: center;
 }
 
 .auth-food-icons {
