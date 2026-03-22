@@ -1,5 +1,4 @@
 import { useContext, useState } from "react";
-import Modal from "./UI/Modal";
 import Button from "./UI/Button";
 import Input from "./UI/Input";
 import AuthContext from "./store/AuthContext";
@@ -68,7 +67,7 @@ export default function Signup({ onSwitchToLogin }) {
     }
 
     return (
-        <Modal open={true} onClose={() => {}}>
+        <div className="auth-page signup-page">
             <div className="auth-container signup-container">
                 {/* Left Side - Branding & Welcome Message */}
                 <div className="auth-branding signup-branding">
@@ -158,6 +157,6 @@ export default function Signup({ onSwitchToLogin }) {
                     </button>
                 </form>
             </div>
-        </Modal>
+        </div>
     );
 }
