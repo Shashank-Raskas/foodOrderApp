@@ -69,69 +69,95 @@ export default function Signup({ onSwitchToLogin }) {
 
     return (
         <Modal open={true} onClose={() => {}}>
-            <form onSubmit={handleSubmit} className="auth-form">
-                <h2>Sign Up</h2>
-                <p className="auth-subtitle">Create a new account to start ordering</p>
-
-                {formErrors.submit && <p className="error-message">{formErrors.submit}</p>}
-
-                <Input
-                    label='Full Name'
-                    type='text'
-                    id='name'
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    error={formErrors.name}
-                />
-
-                <Input
-                    label='Email Address'
-                    type='email'
-                    id='email'
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    error={formErrors.email}
-                />
-
-                <Input
-                    label='Password'
-                    type='password'
-                    id='password'
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    error={formErrors.password}
-                />
-
-                <Input
-                    label='Confirm Password'
-                    type='password'
-                    id='confirmPassword'
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    error={formErrors.confirmPassword}
-                />
-
-                <p className="password-hint">
-                    Password must contain at least 6 characters, including uppercase, lowercase, and a number
-                </p>
-
-                <div className="auth-actions">
-                    <Button disabled={authCtx.isLoading}>
-                        {authCtx.isLoading ? 'Creating account...' : 'Sign Up'}
-                    </Button>
+            <div className="auth-container signup-container">
+                {/* Left Side - Branding & Welcome Message */}
+                <div className="auth-branding signup-branding">
+                    <div className="auth-brand-content">
+                        <div className="auth-brand-icon">✨</div>
+                        <h1 className="auth-brand-name">The Flavor Alchemist</h1>
+                        <p className="auth-brand-tagline">Join the Culinary Magic</p>
+                        <div className="auth-decorative-line"></div>
+                        <p className="auth-welcome-text">
+                            Create your account and experience extraordinary flavors crafted with passion.
+                        </p>
+                    </div>
+                    <div className="auth-food-icons">
+                        <span className="food-emoji" style={{animationDelay: '0s'}}>🍱</span>
+                        <span className="food-emoji" style={{animationDelay: '0.2s'}}>🥗</span>
+                        <span className="food-emoji" style={{animationDelay: '0.4s'}}>🍛</span>
+                        <span className="food-emoji" style={{animationDelay: '0.6s'}}>🍲</span>
+                        <span className="food-emoji" style={{animationDelay: '0.8s'}}>🥙</span>
+                    </div>
                 </div>
 
-                <p className="auth-switch-text">
-                    Already have an account?{' '}
+                {/* Right Side - Form */}
+                <form onSubmit={handleSubmit} className="auth-form signup-form">
+                    <div className="form-header">
+                        <h2>Create Account</h2>
+                        <p className="form-subtitle">Join us and start your culinary journey</p>
+                    </div>
+
+                    {formErrors.submit && <p className="error-message">{formErrors.submit}</p>}
+
+                    <Input
+                        label='Full Name'
+                        type='text'
+                        id='name'
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        error={formErrors.name}
+                    />
+
+                    <Input
+                        label='Email Address'
+                        type='email'
+                        id='email'
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        error={formErrors.email}
+                    />
+
+                    <Input
+                        label='Password'
+                        type='password'
+                        id='password'
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        error={formErrors.password}
+                    />
+
+                    <Input
+                        label='Confirm Password'
+                        type='password'
+                        id='confirmPassword'
+                        value={formData.confirmPassword}
+                        onChange={handleInputChange}
+                        error={formErrors.confirmPassword}
+                    />
+
+                    <p className="password-hint">
+                        Password must contain at least 6 characters, including uppercase, lowercase, and a number
+                    </p>
+
+                    <div className="auth-actions">
+                        <Button disabled={authCtx.isLoading}>
+                            {authCtx.isLoading ? 'Creating account...' : 'Create Account'}
+                        </Button>
+                    </div>
+
+                    <div className="auth-divider">
+                        <span>Already have an account?</span>
+                    </div>
+
                     <button
                         type="button"
-                        className="auth-switch-btn"
+                        className="auth-switch-btn-large"
                         onClick={onSwitchToLogin}
                     >
-                        Login here
+                        Sign In
                     </button>
-                </p>
-            </form>
+                </form>
+            </div>
         </Modal>
     );
 }

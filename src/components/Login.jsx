@@ -48,47 +48,73 @@ export default function Login({ onSwitchToSignup }) {
 
     return (
         <Modal open={true} onClose={() => {}}>
-            <form onSubmit={handleSubmit} className="auth-form">
-                <h2>Login</h2>
-                <p className="auth-subtitle">Sign in to your account to order food</p>
-
-                {formErrors.submit && <p className="error-message">{formErrors.submit}</p>}
-
-                <Input
-                    label='Email Address'
-                    type='email'
-                    id='email'
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    error={formErrors.email}
-                />
-
-                <Input
-                    label='Password'
-                    type='password'
-                    id='password'
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    error={formErrors.password}
-                />
-
-                <div className="auth-actions">
-                    <Button disabled={authCtx.isLoading}>
-                        {authCtx.isLoading ? 'Logging in...' : 'Login'}
-                    </Button>
+            <div className="auth-container">
+                {/* Left Side - Branding & Welcome Message */}
+                <div className="auth-branding">
+                    <div className="auth-brand-content">
+                        <div className="auth-brand-icon">🔥</div>
+                        <h1 className="auth-brand-name">The Flavor Alchemist</h1>
+                        <p className="auth-brand-tagline">Alchemize Your Cravings</p>
+                        <div className="auth-decorative-line"></div>
+                        <p className="auth-welcome-text">
+                            Welcome back! Sign in to discover culinary magic and place your order.
+                        </p>
+                    </div>
+                    <div className="auth-food-icons">
+                        <span className="food-emoji" style={{animationDelay: '0s'}}>🍕</span>
+                        <span className="food-emoji" style={{animationDelay: '0.2s'}}>🍝</span>
+                        <span className="food-emoji" style={{animationDelay: '0.4s'}}>🥘</span>
+                        <span className="food-emoji" style={{animationDelay: '0.6s'}}>🍜</span>
+                        <span className="food-emoji" style={{animationDelay: '0.8s'}}>🌮</span>
+                    </div>
                 </div>
 
-                <p className="auth-switch-text">
-                    Don't have an account?{' '}
+                {/* Right Side - Form */}
+                <form onSubmit={handleSubmit} className="auth-form login-form">
+                    <div className="form-header">
+                        <h2>Login</h2>
+                        <p className="form-subtitle">Sign in to your account</p>
+                    </div>
+
+                    {formErrors.submit && <p className="error-message">{formErrors.submit}</p>}
+
+                    <Input
+                        label='Email Address'
+                        type='email'
+                        id='email'
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        error={formErrors.email}
+                    />
+
+                    <Input
+                        label='Password'
+                        type='password'
+                        id='password'
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        error={formErrors.password}
+                    />
+
+                    <div className="auth-actions">
+                        <Button disabled={authCtx.isLoading}>
+                            {authCtx.isLoading ? 'Signing in...' : 'Login'}
+                        </Button>
+                    </div>
+
+                    <div className="auth-divider">
+                        <span>Don't have an account?</span>
+                    </div>
+
                     <button
                         type="button"
-                        className="auth-switch-btn"
+                        className="auth-switch-btn-large"
                         onClick={onSwitchToSignup}
                     >
-                        Sign up here
+                        Create New Account
                     </button>
-                </p>
-            </form>
+                </form>
+            </div>
         </Modal>
     );
 }
