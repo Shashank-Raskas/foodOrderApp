@@ -5,6 +5,7 @@ import { currencyFormatter } from "../util/formatting";
 import Input from "./UI/Input";
 import Button from "./UI/Button";
 import UserProgressContext from "./store/UserProgressContext";
+import AuthContext from "./store/AuthContext";
 import useHttp from "../hooks/useHttp";
 import Error from "./Error";
 import { API_ENDPOINTS } from "../config/api";
@@ -20,6 +21,7 @@ const requestConfig = {
 export default function Checkout() {
     const cartCtx = useContext(CartContext);
     const userProgressCtx = useContext(UserProgressContext);
+    const authCtx = useContext(AuthContext);
     const [formErrors, setFormErrors] = useState({});
     
     const { data, error, isLoading, sendRequest, clearData } = useHttp(API_ENDPOINTS.ORDERS, requestConfig);
@@ -56,7 +58,8 @@ export default function Checkout() {
         await sendRequest(JSON.stringify({
             order: {
                 items: cartCtx.items,
-                customer: customerData
+                customer: customerData,
+                userId: authCtx.user.userId,
             },
         }));
     }

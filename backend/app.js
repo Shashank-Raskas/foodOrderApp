@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import bodyParser from 'body-parser';
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import bcrypt from 'bcryptjs';
 import db from './firebase.js'; // add this import
 
 // Load environment variables
@@ -48,8 +49,111 @@ app.get('/meals', async (req, res) => {
   res.json(JSON.parse(meals));
 });
 
+// Signup endpoint
+app.post('/api/signup', async (req, res) => {
+  const { email, password, name } = req.body;
 
-app.post('/orders', async (req, res) => {
+  // Validation
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ message: 'Invalid email address.' });
+  }
+
+  if (!password || password.length < 6) {
+    return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+  }
+
+  if (!name || name.trim() === '') {
+    return res.status(400).json({ message: 'Name is required.' });
+  }
+
+  try {
+    // Check if user already exists
+    const existingUser = await db
+      .collection('credentials')
+      .where('email', '==', email.toLowerCase())
+      .limit(1)
+      .get();
+
+    if (!existingUser.empty) {
+      return res.status(400).json({ message: 'User with this email already exists.' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create new user
+    const userId = uuidv4();
+    const newUser = {
+      userId,
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      name: name.trim(),
+      createdAt: new Date().toISOString(),
+    };
+
+    await db.collection('credentials').add(newUser);
+
+    res.status(201).json({
+      message: 'User created successfully!',
+      userId,
+      email: newUser.email,
+      name: newUser.name,
+    });
+  } catch (err) {
+    console.error('Signup error:', err);
+    res.status(500).json({ message: 'Failed to create user.' });
+  }
+});
+
+// Login endpoint
+app.post('/api/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  // Validation
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ message: 'Invalid email address.' });
+  }
+
+  if (!password) {
+    return res.status(400).json({ message: 'Password is required.' });
+  }
+
+  try {
+    // Find user by email
+    const userSnapshot = await db
+      .collection('credentials')
+      .where('email', '==', email.toLowerCase())
+      .limit(1)
+      .get();
+
+    if (userSnapshot.empty) {
+      return res.status(401).json({ message: 'Invalid email or password.' });
+    }
+
+    const userDoc = userSnapshot.docs[0];
+    const user = userDoc.data();
+
+    // Verify password
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ message: 'Invalid email or password.' });
+    }
+
+    res.status(200).json({
+      message: 'Login successful!',
+      userId: user.userId,
+      email: user.email,
+      name: user.name,
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ message: 'Login failed. Please try again.' });
+  }
+});
+
+
+app.post('/api/orders', async (req, res) => {
   const orderData = req.body.order;
 
   if (!orderData || !orderData.items || orderData.items.length === 0) {

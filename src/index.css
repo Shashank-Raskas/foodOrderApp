@@ -40,6 +40,25 @@ body {
   font-family: 'Lato', sans-serif;
 }
 
+#main-header nav {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+#main-header .user-info {
+  color: #d4a574;
+  font-weight: 500;
+}
+
+#main-header .logout-btn {
+  color: #ff6b6b;
+}
+
+#main-header .logout-btn:hover {
+  color: #ff8787;
+}
+
 h1 {
   font-family: 'Lato', sans-serif;
   font-weight: 700;

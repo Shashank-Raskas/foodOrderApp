@@ -39,7 +39,9 @@ export const API_URL = determineAPIUrl();
 
 export const API_ENDPOINTS = {
   MEALS: `${API_URL}/meals`,
-  ORDERS: `${API_URL}/orders`,
+  ORDERS: `${API_URL}/api/orders`,
+  LOGIN: `${API_URL}/api/login`,
+  SIGNUP: `${API_URL}/api/signup`,
 };
 
 // Export for debugging
