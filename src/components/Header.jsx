@@ -18,6 +18,10 @@ export default function Header() {
         userProgresCtx.showCart(); // Show the cart when the button is clicked
     }
 
+    function handleShowProfile() {
+        userProgresCtx.showProfile();
+    }
+
     function handleLogout() {
         authCtx.logout();
         cartCtx.clearCart();
@@ -31,7 +35,13 @@ export default function Header() {
         <nav>
             {authCtx.isLoggedIn ? (
                 <>
-                    <span className="user-info">Welcome, {authCtx.user.name}</span>
+                    <button 
+                        className="header-profile-btn"
+                        onClick={handleShowProfile}
+                        title="View profile"
+                    >
+                        👤 {authCtx.user.name}
+                    </button>
                     <Button onClick={handleShowCart} textOnly>Cart ({totalCartItems})</Button>
                     <Button onClick={handleLogout} textOnly className="logout-btn">Logout</Button>
                 </>

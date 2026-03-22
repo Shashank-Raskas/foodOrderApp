@@ -1,0 +1,318 @@
+/* ==================== USER PROFILE CONTAINER ==================== */
+.user-profile-container {
+    padding: 30px;
+    max-width: 500px;
+    animation: fadeInUp 0.5s ease-out;
+}
+
+/* ==================== PROFILE HEADER ==================== */
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    padding-bottom: 30px;
+    border-bottom: 2px solid #d4a574;
+    margin-bottom: 30px;
+}
+
+.user-avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffc404, #ffab04);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 38px;
+    font-weight: 700;
+    color: #1f1a09;
+    box-shadow: 0 4px 15px rgba(255, 196, 4, 0.3);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.user-info h2 {
+    margin: 0 0 8px 0;
+    color: #2c2306;
+    font-size: 22px;
+    font-family: 'Lato', sans-serif;
+}
+
+.user-email {
+    color: #5a5451;
+    font-size: 14px;
+    margin: 0 0 8px 0;
+}
+
+.join-date {
+    color: #a8a29e;
+    font-size: 12px;
+    margin: 0;
+    font-style: italic;
+}
+
+/* ==================== SUCCESS MESSAGE ==================== */
+.success-message {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.05));
+    color: #2e7d32;
+    padding: 12px 15px;
+    border-left: 4px solid #4caf50;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    animation: slideInRight 0.4s ease-out;
+}
+
+/* ==================== PROFILE DISPLAY ==================== */
+.profile-display {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.profile-section {
+    margin-bottom: 25px;
+}
+
+.profile-section h3 {
+    color: #2c2306;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #e4ddd4;
+}
+
+.info-label {
+    color: #5a5451;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.info-value {
+    color: #2c2306;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* ==================== PROFILE FORM ==================== */
+.profile-form {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.profile-form h3 {
+    color: #2c2306;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.profile-form .control {
+    margin-bottom: 18px;
+}
+
+.profile-form .control label {
+    color: #2c2306;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.profile-form input {
+    width: 100%;
+    background-color: #fff;
+    color: #1f1a09;
+    border: 2px solid #d4a574;
+    padding: 12px 15px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.profile-form input:focus {
+    outline: none;
+    border-color: #ffc404;
+    box-shadow: 0 0 0 3px rgba(255, 196, 4, 0.1), 0 4px 12px rgba(255, 196, 4, 0.2);
+}
+
+/* ==================== PROFILE ACTIONS ==================== */
+.profile-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 25px;
+}
+
+.profile-actions button {
+    width: 100%;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+/* ==================== FORM BUTTONS ==================== */
+.form-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 25px;
+    flex-wrap: wrap;
+}
+
+.form-buttons button {
+    flex: 1;
+    min-width: 140px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-buttons .text-button {
+    background: none;
+    color: #d4a574;
+    border: 2px solid #d4a574;
+    flex: 0 1 auto;
+}
+
+.form-buttons .text-button:hover {
+    background-color: #d4a574;
+    color: #e4ddd4;
+}
+
+/* ==================== PASSWORD HINT ==================== */
+.profile-form .password-hint {
+    font-size: 12px;
+    color: #5a5451;
+    margin: 12px 0 20px 0;
+    padding: 12px;
+    background-color: rgba(212, 165, 116, 0.08);
+    border-left: 3px solid #d4a574;
+    border-radius: 4px;
+    line-height: 1.5;
+}
+
+/* ==================== ERROR MESSAGE ==================== */
+.profile-form .error-message {
+    color: #c41e3a;
+    font-size: 13px;
+    margin-bottom: 20px;
+    padding: 12px 15px;
+    background: linear-gradient(135deg, rgba(196, 30, 58, 0.1), rgba(196, 30, 58, 0.05));
+    border-left: 4px solid #c41e3a;
+    border-radius: 6px;
+}
+
+/* ==================== PROFILE FOOTER ==================== */
+.profile-footer {
+    display: flex;
+    justify-content: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e4ddd4;
+}
+
+.close-btn {
+    background-color: transparent;
+    color: #5a5451;
+    border: 2px solid #d4a574;
+    padding: 12px 30px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.close-btn:hover {
+    background-color: #d4a574;
+    color: #e4ddd4;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(212, 165, 116, 0.25);
+}
+
+.close-btn:active {
+    transform: translateY(0);
+}
+
+/* ==================== ANIMATIONS ==================== */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+@media (max-width: 600px) {
+    .user-profile-container {
+        padding: 25px 20px;
+    }
+
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+    }
+
+    .user-avatar {
+        width: 80px;
+        height: 80px;
+        font-size: 32px;
+    }
+
+    .user-info h2 {
+        font-size: 18px;
+    }
+
+    .profile-actions {
+        margin-top: 20px;
+    }
+
+    .form-buttons {
+        flex-direction: column;
+    }
+
+    .form-buttons button {
+        min-width: unset;
+        width: 100%;
+    }
+
+    .form-buttons .text-button {
+        flex: 1;
+    }
+}

@@ -152,6 +152,110 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// Update user profile endpoint
+app.put('/api/user/profile', async (req, res) => {
+  const { userId, name } = req.body;
+
+  // Validation
+  if (!userId) {
+    return res.status(400).json({ message: 'User ID is required.' });
+  }
+
+  if (!name || name.trim() === '') {
+    return res.status(400).json({ message: 'Name cannot be empty.' });
+  }
+
+  try {
+    // Find user by userId
+    const userSnapshot = await db
+      .collection('credentials')
+      .where('userId', '==', userId)
+      .limit(1)
+      .get();
+
+    if (userSnapshot.empty) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const userDoc = userSnapshot.docs[0];
+
+    // Update user name
+    await userDoc.ref.update({
+      name: name.trim(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    res.status(200).json({
+      message: 'Profile updated successfully!',
+      name: name.trim(),
+    });
+  } catch (err) {
+    console.error('Profile update error:', err);
+    res.status(500).json({ message: 'Failed to update profile.' });
+  }
+});
+
+// Change password endpoint
+app.put('/api/user/change-password', async (req, res) => {
+  const { userId, oldPassword, newPassword } = req.body;
+
+  // Validation
+  if (!userId) {
+    return res.status(400).json({ message: 'User ID is required.' });
+  }
+
+  if (!oldPassword) {
+    return res.status(400).json({ message: 'Current password is required.' });
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ message: 'New password must be at least 6 characters.' });
+  }
+
+  if (oldPassword === newPassword) {
+    return res.status(400).json({ message: 'New password must be different from the old password.' });
+  }
+
+  try {
+    // Find user by userId
+    const userSnapshot = await db
+      .collection('credentials')
+      .where('userId', '==', userId)
+      .limit(1)
+      .get();
+
+    if (userSnapshot.empty) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const userDoc = userSnapshot.docs[0];
+    const user = userDoc.data();
+
+    // Verify old password
+    const passwordMatch = await bcrypt.compare(oldPassword, user.password);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ message: 'Current password is incorrect.' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await userDoc.ref.update({
+      password: hashedPassword,
+      updatedAt: new Date().toISOString(),
+    });
+
+    res.status(200).json({
+      message: 'Password changed successfully!',
+    });
+  } catch (err) {
+    console.error('Change password error:', err);
+    res.status(500).json({ message: 'Failed to change password.' });
+  }
+});
+
 
 app.post('/api/orders', async (req, res) => {
   const orderData = req.body.order;

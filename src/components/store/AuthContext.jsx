@@ -7,6 +7,7 @@ const AuthContext = createContext({
     login: () => {},
     signup: () => {},
     logout: () => {},
+    updateUser: () => {},
     isLoading: false,
     error: null,
 });
@@ -105,12 +106,19 @@ export function AuthContextProvider({ children }) {
         localStorage.removeItem('user');
     }
 
+    function updateUser(userData) {
+        const updatedUser = { ...user, ...userData };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+
     const authCtx = {
         user,
         isLoggedIn: user !== null,
         login,
         signup,
         logout,
+        updateUser,
         isLoading,
         error,
     };

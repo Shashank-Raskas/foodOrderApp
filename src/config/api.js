@@ -42,6 +42,8 @@ export const API_ENDPOINTS = {
   ORDERS: `${API_URL}/api/orders`,
   LOGIN: `${API_URL}/api/login`,
   SIGNUP: `${API_URL}/api/signup`,
+  USER_PROFILE: `${API_URL}/api/user/profile`,
+  USER_CHANGE_PASSWORD: `${API_URL}/api/user/change-password`,
 };
 
 // Export for debugging

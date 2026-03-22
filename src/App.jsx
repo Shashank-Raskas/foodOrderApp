@@ -5,6 +5,7 @@ import Header from "./components/Header";
 import Meals from "./components/Meals";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
+import UserProfile from "./components/UserProfile";
 import { CartContextProvider } from "./components/store/CartContext";
 import { UserProgressContextProvider } from "./components/store/UserProgressContext";
 import { AuthContextProvider } from "./components/store/AuthContext";
@@ -29,6 +30,7 @@ function AppContent() {
         <Meals />
         <Cart />
         <Checkout />
+        <UserProfile />
       </CartContextProvider>
     </UserProgressContextProvider>
   );
