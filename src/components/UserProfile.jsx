@@ -125,7 +125,7 @@ export default function UserProfile() {
                 },
                 body: JSON.stringify({
                     userId: authCtx.user.userId,
-                    currentPassword: formData.currentPassword,
+                    oldPassword: formData.currentPassword,
                     newPassword: formData.newPassword,
                 }),
             });
