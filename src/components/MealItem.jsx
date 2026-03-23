@@ -1,6 +1,5 @@
-import { useContext } from "react"
+import { useContext, useMemo } from "react"
 import { currencyFormatter } from "../util/formatting"
-import Button from "./UI/Button"
 import CartContext from "./store/CartContext"
 import { API_URL } from "../config/api"
 
@@ -8,8 +7,22 @@ export default function MealItem({meal}) {
 
     const cartCtx = useContext(CartContext);
     
-    function handleAddMealToCart(){
+    // Check if item is in cart
+    const itemInCart = useMemo(() => 
+        cartCtx.items.find(item => item.id === meal.id),
+        [cartCtx.items, meal.id]
+    );
+
+    function handleAddToCart(){
         cartCtx.addItem(meal);
+    }
+
+    function handleIncreaseQty() {
+        cartCtx.addItem(meal);
+    }
+
+    function handleDecreaseQty() {
+        cartCtx.removeItem(meal.id);
     }
 
     return <li className="meal-item">
@@ -21,7 +34,23 @@ export default function MealItem({meal}) {
                 <p className="meal-item-description">{meal.description}</p>
             </div>
             <p className="meal-item-actions">
-                <Button onClick={handleAddMealToCart}>Add to cart</Button>
+                {!itemInCart ? (
+                    // Initial state: single + button
+                    <button 
+                        className="qty-add-btn" 
+                        onClick={handleAddToCart}
+                        title="Add to cart"
+                    >
+                        +
+                    </button>
+                ) : (
+                    // Active state: - qty +
+                    <div className="quantity-selector active">
+                        <button className="qty-btn qty-minus" onClick={handleDecreaseQty}>−</button>
+                        <span className="qty-display">{itemInCart.quantity}</span>
+                        <button className="qty-btn qty-plus" onClick={handleIncreaseQty}>+</button>
+                    </div>
+                )}
             </p>
         </article>
         </li>

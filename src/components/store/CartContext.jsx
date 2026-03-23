@@ -9,19 +9,19 @@ const CartContext = createContext({
 
 function cartReducer(state, action) {
     if (action.type === 'ADD_ITEM') {
-        //state.items.push(action.item); //! if this is used , and single item clicke dmany times, it will be added multiple times
-        const existingCartItemIndex = state.items.findIndex(item => item.id === action.item.id); //? find the index of the item to be added in the cart
+        const existingCartItemIndex = state.items.findIndex(item => item.id === action.item.id);
 
-        const updatedItems = [...state.items]; // create a copy of the items array to avoid mutating the state directly
-        if (existingCartItemIndex > -1) {  //!if the item is already in the cart, we need to update the quantity
+        const updatedItems = [...state.items];
+        
+        if (existingCartItemIndex > -1) {
             const existingItem = state.items[existingCartItemIndex];
             const updatedItem = {
                 ...existingItem,
                 quantity: existingItem.quantity + 1,
             }
-            updatedItems[existingCartItemIndex] = updatedItem; // update the item in the array
+            updatedItems[existingCartItemIndex] = updatedItem;
         } else {
-            updatedItems.push({ ...action.item, quantity: 1 }); // add the new item to the array with quantity 1
+            updatedItems.push({ ...action.item, quantity: 1 });
         }
 
         return {
@@ -63,6 +63,7 @@ export function CartContextProvider({ children }) {
 
     const [cart, dispatchCartAction] = useReducer(cartReducer, { items: [] });
 
+    
     
     function addItem(item) {
         dispatchCartAction({ type: 'ADD_ITEM', item: item });
