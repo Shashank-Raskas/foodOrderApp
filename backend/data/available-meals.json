@@ -138,5 +138,110 @@
     "price": "320",
     "description": "Crispy falafels wrapped in a warm pita with lettuce, tomatoes, and a tahini sauce.",
     "image": "images/falafel-wrap.jpg"
+  },
+  {
+    "id": "m21",
+    "name": "Butter Chicken",
+    "price": "550",
+    "description": "Tender chicken pieces simmered in a rich, creamy tomato-butter sauce with aromatic spices. Served with naan.",
+    "image": "images/butter-chicken.jpg"
+  },
+  {
+    "id": "m22",
+    "name": "Chicken Biryani",
+    "price": "499",
+    "description": "Fragrant basmati rice layered with spiced chicken, caramelized onions, and saffron. A royal Indian delicacy.",
+    "image": "images/chicken-biryani.jpg"
+  },
+  {
+    "id": "m23",
+    "name": "Pad Thai",
+    "price": "450",
+    "description": "Stir-fried rice noodles with shrimp, tofu, bean sprouts, peanuts, and a tangy tamarind sauce.",
+    "image": "images/pad-thai.jpg"
+  },
+  {
+    "id": "m24",
+    "name": "Lasagna",
+    "price": "599",
+    "description": "Layers of fresh pasta, rich Bolognese sauce, creamy béchamel, and melted mozzarella baked to perfection.",
+    "image": "images/lasagna.jpg"
+  },
+  {
+    "id": "m25",
+    "name": "Tiramisu",
+    "price": "399",
+    "description": "Classic Italian dessert with espresso-soaked ladyfingers, mascarpone cream, and a dusting of cocoa powder.",
+    "image": "images/tiramisu.jpg"
+  },
+  {
+    "id": "m26",
+    "name": "Garlic Bread",
+    "price": "199",
+    "description": "Toasted bread rubbed with garlic, drizzled with olive oil, and topped with fresh herbs and cherry tomatoes.",
+    "image": "images/garlic-bread.jpg"
+  },
+  {
+    "id": "m27",
+    "name": "Samosa",
+    "price": "149",
+    "description": "Crispy golden pastry stuffed with spiced potatoes and peas, served with tangy mint and tamarind chutney.",
+    "image": "images/samosa.jpg"
+  },
+  {
+    "id": "m28",
+    "name": "Paneer Tikka",
+    "price": "399",
+    "description": "Chargrilled paneer cubes marinated in yoghurt and spices, served with mint chutney and onion salad.",
+    "image": "images/paneer-tikka.jpg"
+  },
+  {
+    "id": "m29",
+    "name": "Chicken Wings",
+    "price": "449",
+    "description": "Crispy golden-brown chicken wings tossed in your choice of BBQ, buffalo, or honey garlic sauce.",
+    "image": "images/chicken-wings.jpg"
+  },
+  {
+    "id": "m30",
+    "name": "Fish & Chips",
+    "price": "520",
+    "description": "Beer-battered fish fillet fried to crispy perfection, served with thick-cut chips and tartar sauce.",
+    "image": "images/fish-and-chips.jpg"
+  },
+  {
+    "id": "m31",
+    "name": "Waffles & Berries",
+    "price": "349",
+    "description": "Fluffy Belgian waffles topped with fresh strawberries, blueberries, whipped cream, and maple syrup.",
+    "image": "images/waffles.jpg"
+  },
+  {
+    "id": "m32",
+    "name": "Fried Rice",
+    "price": "350",
+    "description": "Wok-tossed rice with vegetables, scrambled egg, soy sauce, and your choice of chicken or shrimp.",
+    "image": "images/fried-rice.jpg"
+  },
+  {
+    "id": "m33",
+    "name": "Ice Cream Sundae",
+    "price": "299",
+    "description": "Three scoops of premium ice cream with hot fudge, caramel drizzle, whipped cream, and sprinkles.",
+    "image": "images/ice-cream-sundae.jpg"
+  },
+  {
+    "id": "m34",
+    "name": "Chicken Shawarma",
+    "price": "380",
+    "description": "Juicy marinated chicken wrapped in a warm pita with pickled vegetables, garlic sauce, and fresh herbs.",
+    "image": "images/chicken-shawarma.jpg"
+  },
+  {
+    "id": "m35",
+    "name": "Spring Rolls",
+    "price": "249",
+    "description": "Crispy fried rolls stuffed with seasoned vegetables and glass noodles, served with sweet chili dipping sauce.",
+    "image": "images/spring-rolls.jpg"
   }
 ]
