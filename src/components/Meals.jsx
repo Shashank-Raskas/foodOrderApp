@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import MealItem from "./MealItem";
 import FilterSidebar from "./FilterSidebar";
 import FloatingSearch from "./FloatingSearch";
@@ -7,6 +7,7 @@ import Error from "./Error";
 import { API_ENDPOINTS } from "../config/api";
 
 const requestConfig = {};
+const MEALS_PER_PAGE = 12;
 
 const DEFAULT_FILTERS = {
     dietary: [],
@@ -24,6 +25,7 @@ export default function Meals() {
     const [searchTerm, setSearchTerm] = useState("");
     const [filters, setFilters] = useState(DEFAULT_FILTERS);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const {
         data: loadedMeals,
@@ -38,6 +40,11 @@ export default function Meals() {
     const handleClearAll = useCallback(() => {
         setFilters(DEFAULT_FILTERS);
     }, []);
+
+    // Reset to page 1 when filters or search change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filters]);
 
     const filteredMeals = useMemo(() => {
         let result = loadedMeals.filter((meal) => {
@@ -104,6 +111,82 @@ export default function Meals() {
         return result;
     }, [loadedMeals, searchTerm, filters]);
 
+    const totalPages = Math.ceil(filteredMeals.length / MEALS_PER_PAGE);
+    const pagedMeals = filteredMeals.slice(
+        (currentPage - 1) * MEALS_PER_PAGE,
+        currentPage * MEALS_PER_PAGE
+    );
+
+    function handlePageChange(page) {
+        setCurrentPage(page);
+        // Scroll to top of meals grid
+        document.getElementById("meals")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function renderPagination() {
+        if (totalPages <= 1) return null;
+
+        const pages = [];
+        const maxVisible = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+        if (endPage - startPage + 1 < maxVisible) {
+            startPage = Math.max(1, endPage - maxVisible + 1);
+        }
+
+        return (
+            <div className="pagination">
+                <button
+                    className="pagination-btn"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    aria-label="Previous page"
+                >
+                    &laquo;
+                </button>
+
+                {startPage > 1 && (
+                    <>
+                        <button className="pagination-btn" onClick={() => handlePageChange(1)}>1</button>
+                        {startPage > 2 && <span className="pagination-ellipsis">&hellip;</span>}
+                    </>
+                )}
+
+                {(() => {
+                    for (let i = startPage; i <= endPage; i++) {
+                        pages.push(
+                            <button
+                                key={i}
+                                className={`pagination-btn${i === currentPage ? " active" : ""}`}
+                                onClick={() => handlePageChange(i)}
+                            >
+                                {i}
+                            </button>
+                        );
+                    }
+                    return pages;
+                })()}
+
+                {endPage < totalPages && (
+                    <>
+                        {endPage < totalPages - 1 && <span className="pagination-ellipsis">&hellip;</span>}
+                        <button className="pagination-btn" onClick={() => handlePageChange(totalPages)}>{totalPages}</button>
+                    </>
+                )}
+
+                <button
+                    className="pagination-btn"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    aria-label="Next page"
+                >
+                    &raquo;
+                </button>
+            </div>
+        );
+    }
+
     if (isLoading) {
         return <p className="center">Fetching Meals...</p>;
     }
@@ -139,11 +222,12 @@ export default function Meals() {
                     <div className="meals-result-bar">
                         <span className="result-count">
                             {filteredMeals.length} {filteredMeals.length === 1 ? "dish" : "dishes"} found
+                            {totalPages > 1 && ` · Page ${currentPage} of ${totalPages}`}
                         </span>
                     </div>
                     <ul id="meals">
-                        {filteredMeals.length > 0 ? (
-                            filteredMeals.map((meal) => (
+                        {pagedMeals.length > 0 ? (
+                            pagedMeals.map((meal) => (
                                 <MealItem key={meal.id} meal={meal} />
                             ))
                         ) : (
@@ -152,6 +236,7 @@ export default function Meals() {
                             </p>
                         )}
                     </ul>
+                    {renderPagination()}
                 </main>
             </div>
 

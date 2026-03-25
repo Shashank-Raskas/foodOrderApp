@@ -276,6 +276,60 @@ h1 {
   grid-column: 1 / -1;
 }
 
+/* ==================== PAGINATION ==================== */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 2rem 1rem 1rem;
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 10px;
+  border: 1.5px solid #3a332a;
+  border-radius: 8px;
+  background: #1e1b16;
+  color: #d9e2f1;
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-family: 'Lato', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled):not(.active) {
+  background: #2c2306;
+  border-color: #ffc404;
+  color: #ffc404;
+}
+
+.pagination-btn.active {
+  background: linear-gradient(135deg, #ffc404, #ffab04);
+  color: #2c2306;
+  border-color: #ffc404;
+  cursor: default;
+  box-shadow: 0 2px 8px rgba(255, 196, 4, 0.3);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pagination-ellipsis {
+  color: #a8a29e;
+  font-size: 0.95rem;
+  padding: 0 4px;
+  user-select: none;
+}
+
 /* ==================== MOBILE FILTER TOGGLE ==================== */
 .mobile-filter-toggle {
   display: none;
