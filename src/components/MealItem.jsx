@@ -2,25 +2,33 @@ import { useContext, useMemo } from "react"
 import { currencyFormatter } from "../util/formatting"
 import CartContext from "./store/CartContext"
 import FavoritesContext from "./store/FavoritesContext"
+import AuthContext from "./store/AuthContext"
+import UserProgressContext from "./store/UserProgressContext"
 import { API_URL } from "../config/api"
 
 export default function MealItem({meal}) {
 
     const cartCtx = useContext(CartContext);
     const favCtx = useContext(FavoritesContext);
+    const authCtx = useContext(AuthContext);
+    const userProgressCtx = useContext(UserProgressContext);
     
     // Check if item is in cart
     const itemInCart = useMemo(() => 
-        cartCtx.items.find(item => item.id === meal.id),
-        [cartCtx.items, meal.id]
+        authCtx.isLoggedIn ? cartCtx.items.find(item => item.id === meal.id) : null,
+        [cartCtx.items, meal.id, authCtx.isLoggedIn]
     );
 
     const isFavorited = useMemo(() =>
-        favCtx?.isFavorite(meal.id),
-        [favCtx?.favorites, meal.id]
+        authCtx.isLoggedIn ? favCtx?.isFavorite(meal.id) : false,
+        [favCtx?.favorites, meal.id, authCtx.isLoggedIn]
     );
 
     function handleAddToCart(){
+        if (!authCtx.isLoggedIn) {
+            userProgressCtx.showAuth('login');
+            return;
+        }
         cartCtx.addItem(meal);
     }
 
@@ -33,6 +41,10 @@ export default function MealItem({meal}) {
     }
 
     function handleToggleFavorite() {
+        if (!authCtx.isLoggedIn) {
+            userProgressCtx.showAuth('login');
+            return;
+        }
         if (isFavorited) {
             favCtx.removeFavorite(meal.id);
         } else {

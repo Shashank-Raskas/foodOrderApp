@@ -2,6 +2,7 @@ import { createContext , useState} from "react";
 
 const UserProgressContext = createContext({
     progress: '',
+    authView: null,
     showCart: () => {},
     hideCart: () => {},
     showCheckout: () => {},
@@ -12,11 +13,14 @@ const UserProgressContext = createContext({
     hideFavorites: () => {},
     showOrderHistory: () => {},
     hideOrderHistory: () => {},
+    showAuth: () => {},
+    hideAuth: () => {},
 });
 
 export function UserProgressContextProvider({ children }) {
 
 const [UserProgress,setUserProgress] = useState('');
+const [authView, setAuthView] = useState(null); // 'login' | 'signup' | null
 
 function showCart() {
     setUserProgress('cart');
@@ -55,18 +59,29 @@ function hideOrderHistory() {
     setUserProgress('');
 }
 
+function showAuth(view = 'login') {
+    setAuthView(view);
+}
+
+function hideAuth() {
+    setAuthView(null);
+}
+
 const userProgressCtx= {
     progress: UserProgress,
-    showCart: showCart,
-    hideCart: hideCart,
-    showCheckout: showCheckout,
-    hideCheckout: hideCheckout,
-    showProfile: showProfile,
-    hideProfile: hideProfile,
-    showFavorites: showFavorites,
-    hideFavorites: hideFavorites,
-    showOrderHistory: showOrderHistory,
-    hideOrderHistory: hideOrderHistory,
+    authView,
+    showCart,
+    hideCart,
+    showCheckout,
+    hideCheckout,
+    showProfile,
+    hideProfile,
+    showFavorites,
+    hideFavorites,
+    showOrderHistory,
+    hideOrderHistory,
+    showAuth,
+    hideAuth,
 };
 return (
     <UserProgressContext.Provider value={userProgressCtx}>

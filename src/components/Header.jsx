@@ -100,7 +100,22 @@ export default function Header() {
                             )}
                         </div>
                     </>
-                ) : null}
+                ) : (
+                    <div className="header-auth-btns">
+                        <button
+                            className="header-login-btn"
+                            onClick={() => userProgresCtx.showAuth('login')}
+                        >
+                            Login
+                        </button>
+                        <button
+                            className="header-signup-btn"
+                            onClick={() => userProgresCtx.showAuth('signup')}
+                        >
+                            Sign Up
+                        </button>
+                    </div>
+                )}
             </nav>
         </header>
     );
