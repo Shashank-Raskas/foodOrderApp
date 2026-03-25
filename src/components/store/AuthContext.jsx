@@ -8,6 +8,8 @@ const AuthContext = createContext({
     signup: () => {},
     logout: () => {},
     updateUser: () => {},
+    sendOtp: () => {},
+    verifyOtp: () => {},
     isLoading: false,
     error: null,
 });
@@ -102,6 +104,63 @@ export function AuthContextProvider({ children }) {
         }
     }
 
+    async function sendOtp(type, destination) {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(API_ENDPOINTS.OTP_SEND, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, destination }),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Failed to send OTP');
+            return data;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    async function verifyOtp(type, destination, otp, name) {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(API_ENDPOINTS.OTP_VERIFY, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, destination, otp, name }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                // If server says name is needed, propagate that flag
+                if (data.needsName) {
+                    const err = new Error(data.message);
+                    err.needsName = true;
+                    throw err;
+                }
+                throw new Error(data.message || 'Verification failed');
+            }
+            const userData = {
+                userId: data.userId,
+                email: data.email,
+                phone: data.phone,
+                name: data.name,
+                createdAt: data.createdAt,
+            };
+            setUser(userData);
+            localStorage.setItem('user', JSON.stringify(userData));
+            return userData;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
     function logout() {
         setUser(null);
         setError(null);
@@ -121,6 +180,8 @@ export function AuthContextProvider({ children }) {
         signup,
         logout,
         updateUser,
+        sendOtp,
+        verifyOtp,
         isLoading,
         error,
     };

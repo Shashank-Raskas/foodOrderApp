@@ -4,7 +4,10 @@ import bodyParser from 'body-parser';
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
-import db from './firebase.js'; // add this import
+import db from './firebase.js';
+import { generateOtp, storeOtp, verifyOtp, checkRateLimit } from './services/otpService.js';
+import { sendOtpEmail, isEmailConfigured } from './services/emailService.js';
+import { sendOtpSms, isSmsConfigured } from './services/smsService.js';
 
 // Load environment variables
 dotenv.config({ path: `.env.${process.env.NODE_ENV || 'development'}` });
@@ -58,7 +61,7 @@ app.post('/api/signup', async (req, res) => {
     return res.status(400).json({ message: 'Invalid email address.' });
   }
 
-  if (!password || password.length < 6) {
+  if (password && password.length < 6) {
     return res.status(400).json({ message: 'Password must be at least 6 characters.' });
   }
 
@@ -78,18 +81,18 @@ app.post('/api/signup', async (req, res) => {
       return res.status(400).json({ message: 'User with this email already exists.' });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create new user
+    // Hash password (if provided)
     const userId = uuidv4();
     const newUser = {
       userId,
       email: email.toLowerCase(),
-      password: hashedPassword,
       name: name.trim(),
       createdAt: new Date().toISOString(),
     };
+
+    if (password) {
+      newUser.password = await bcrypt.hash(password, 10);
+    }
 
     await db.collection('credentials').add(newUser);
 
@@ -133,6 +136,11 @@ app.post('/api/login', async (req, res) => {
 
     const userDoc = userSnapshot.docs[0];
     const user = userDoc.data();
+
+    // Check if user has a password set (OTP-only users won't)
+    if (!user.password) {
+      return res.status(401).json({ message: 'This account uses OTP login. Please sign in with OTP instead.' });
+    }
 
     // Verify password
     const passwordMatch = await bcrypt.compare(password, user.password);
@@ -257,6 +265,168 @@ app.put('/api/user/change-password', async (req, res) => {
     res.status(500).json({ message: 'Failed to change password.' });
   }
 });
+
+
+// ===================== OTP Auth =====================
+
+// Config endpoint — tells frontend which OTP methods are available
+app.get('/api/auth/config', (req, res) => {
+  res.json({
+    emailOtp: isEmailConfigured(),
+    phoneOtp: isSmsConfigured(),
+  });
+});
+
+// Send OTP
+app.post('/api/otp/send', async (req, res) => {
+  const { type, destination } = req.body; // type: 'email' | 'phone'
+
+  // Validate type
+  if (!type || !['email', 'phone'].includes(type)) {
+    return res.status(400).json({ message: 'Invalid OTP type. Use "email" or "phone".' });
+  }
+
+  // Validate destination
+  if (!destination || !destination.trim()) {
+    return res.status(400).json({ message: `Please provide a valid ${type === 'email' ? 'email address' : 'phone number'}.` });
+  }
+
+  const dest = destination.trim().toLowerCase();
+
+  if (type === 'email') {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dest)) {
+      return res.status(400).json({ message: 'Please provide a valid email address.' });
+    }
+    if (!isEmailConfigured()) {
+      return res.status(503).json({ message: 'Email OTP service is not configured on the server.' });
+    }
+  }
+
+  if (type === 'phone') {
+    // Basic phone validation — must start with + and have at least 10 digits
+    if (!/^\+\d{10,15}$/.test(dest.replace(/[\s\-()]/g, ''))) {
+      return res.status(400).json({ message: 'Please provide a valid phone number with country code (e.g., +91XXXXXXXXXX).' });
+    }
+    if (!isSmsConfigured()) {
+      return res.status(503).json({ message: 'SMS OTP service is not configured on the server.' });
+    }
+  }
+
+  try {
+    // Rate limit check
+    const allowed = await checkRateLimit(dest);
+    if (!allowed) {
+      return res.status(429).json({ message: 'Too many OTP requests. Please wait a few minutes before trying again.' });
+    }
+
+    // Generate and store OTP
+    const otp = generateOtp();
+    await storeOtp(dest, otp, type);
+
+    // Send OTP
+    if (type === 'email') {
+      await sendOtpEmail(dest, otp);
+    } else {
+      await sendOtpSms(dest, otp);
+    }
+
+    console.log(`[OTP] Sent ${type} OTP to ${dest}`);
+    res.status(200).json({ message: `OTP sent to your ${type === 'email' ? 'email' : 'phone'}!` });
+  } catch (err) {
+    console.error('[OTP] Send error:', err);
+    res.status(500).json({ message: err.message || 'Failed to send OTP. Please try again.' });
+  }
+});
+
+// Verify OTP and login/signup
+app.post('/api/otp/verify', async (req, res) => {
+  const { type, destination, otp, name } = req.body;
+
+  if (!type || !['email', 'phone'].includes(type)) {
+    return res.status(400).json({ message: 'Invalid OTP type.' });
+  }
+
+  if (!destination || !otp) {
+    return res.status(400).json({ message: 'Destination and OTP are required.' });
+  }
+
+  const dest = destination.trim().toLowerCase();
+
+  try {
+    // Verify OTP
+    const result = await verifyOtp(dest, otp.trim());
+
+    if (!result.valid) {
+      return res.status(400).json({ message: result.reason });
+    }
+
+    // OTP is valid — find or create user
+    const field = type === 'email' ? 'email' : 'phone';
+    const userSnapshot = await db
+      .collection('credentials')
+      .where(field, '==', dest)
+      .limit(1)
+      .get();
+
+    let userData;
+
+    if (!userSnapshot.empty) {
+      // Existing user — login
+      const user = userSnapshot.docs[0].data();
+      userData = {
+        userId: user.userId,
+        email: user.email || null,
+        phone: user.phone || null,
+        name: user.name,
+        createdAt: user.createdAt,
+        isNewUser: false,
+      };
+    } else {
+      // New user — require name for signup
+      if (!name || !name.trim()) {
+        return res.status(400).json({
+          message: 'Name is required for new accounts.',
+          needsName: true,
+        });
+      }
+
+      // Create new user
+      const userId = uuidv4();
+      const newUser = {
+        userId,
+        name: name.trim(),
+        createdAt: new Date().toISOString(),
+      };
+
+      if (type === 'email') {
+        newUser.email = dest;
+      } else {
+        newUser.phone = dest;
+      }
+
+      await db.collection('credentials').add(newUser);
+
+      userData = {
+        userId,
+        email: newUser.email || null,
+        phone: newUser.phone || null,
+        name: newUser.name,
+        createdAt: newUser.createdAt,
+        isNewUser: true,
+      };
+    }
+
+    res.status(200).json({
+      message: userData.isNewUser ? 'Account created successfully!' : 'Login successful!',
+      ...userData,
+    });
+  } catch (err) {
+    console.error('[OTP] Verify error:', err);
+    res.status(500).json({ message: 'Verification failed. Please try again.' });
+  }
+});
+
+// ===================== End OTP Auth =====================
 
 
 app.post('/api/orders', async (req, res) => {

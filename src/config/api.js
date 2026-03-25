@@ -45,6 +45,9 @@ export const API_ENDPOINTS = {
   SIGNUP: `${API_URL}/api/signup`,
   USER_PROFILE: `${API_URL}/api/user/profile`,
   USER_CHANGE_PASSWORD: `${API_URL}/api/user/change-password`,
+  AUTH_CONFIG: `${API_URL}/api/auth/config`,
+  OTP_SEND: `${API_URL}/api/otp/send`,
+  OTP_VERIFY: `${API_URL}/api/otp/verify`,
 };
 
 // Export for debugging

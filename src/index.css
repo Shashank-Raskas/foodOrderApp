@@ -1493,6 +1493,195 @@ h1 {
   text-decoration: underline;
 }
 
+/* ── Method Selector (Password / OTP) ── */
+.auth-method-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  background: #161310;
+  border: 1px solid #2c2306;
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.auth-method-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  color: #a8a29e;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: 'Lato', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-method-btn.active {
+  background: linear-gradient(135deg, #ffc404, #ffab04);
+  color: #2c2306;
+  box-shadow: 0 2px 8px rgba(255, 196, 4, 0.25);
+}
+
+.auth-method-btn:not(.active):hover {
+  color: #d9e2f1;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* ── OTP Type Toggle (Email / Phone) ── */
+.otp-type-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.otp-type-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 10px;
+  background: transparent;
+  border: 1.5px solid #3a332a;
+  border-radius: 8px;
+  color: #a8a29e;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: 'Lato', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.otp-type-btn.active {
+  border-color: #ffc404;
+  color: #ffc404;
+  background: rgba(255, 196, 4, 0.08);
+}
+
+.otp-type-btn:not(.active):hover {
+  border-color: #57524a;
+  color: #d9e2f1;
+}
+
+/* ── OTP Input Boxes ── */
+.otp-input-group {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0 6px;
+}
+
+.otp-box {
+  width: 44px;
+  height: 52px;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: 'Lato', sans-serif;
+  color: #ffc404;
+  background: #161310;
+  border: 1.5px solid #3a332a;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  caret-color: #ffc404;
+}
+
+.otp-box:focus {
+  border-color: #ffc404;
+  box-shadow: 0 0 0 2px rgba(255, 196, 4, 0.15);
+}
+
+.otp-box-error {
+  border-color: #e63946 !important;
+}
+
+/* ── OTP Info / Resend ── */
+.otp-sent-info {
+  text-align: center;
+  font-size: 0.84rem;
+  color: #a8a29e;
+  font-family: 'Lato', sans-serif;
+  margin-bottom: 4px;
+  line-height: 1.6;
+}
+
+.otp-sent-info strong {
+  color: #d9e2f1;
+  word-break: break-all;
+}
+
+.otp-change-btn {
+  background: none;
+  border: none;
+  color: #ffc404;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: 'Lato', sans-serif;
+  cursor: pointer;
+  margin-left: 6px;
+  padding: 0;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.otp-change-btn:hover {
+  color: #e6ac00;
+}
+
+.otp-resend {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #78716c;
+  font-family: 'Lato', sans-serif;
+  margin-top: 12px;
+}
+
+.otp-resend strong {
+  color: #d9e2f1;
+}
+
+.otp-resend-btn {
+  background: none;
+  border: none;
+  color: #ffc404;
+  font-weight: 700;
+  font-size: 0.8rem;
+  font-family: 'Lato', sans-serif;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.otp-resend-btn:hover {
+  color: #e6ac00;
+  text-decoration: underline;
+}
+
+.otp-new-user-msg {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #a8a29e;
+  font-family: 'Lato', sans-serif;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.auth-modal-error-text {
+  text-align: center;
+  font-size: 0.78rem;
+  color: #ff8787;
+  font-family: 'Lato', sans-serif;
+  margin-top: -2px;
+  margin-bottom: 4px;
+}
+
 /* Form */
 .auth-modal-form {
   display: flex;
