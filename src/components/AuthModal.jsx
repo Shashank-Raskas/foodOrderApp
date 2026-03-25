@@ -10,9 +10,8 @@ export default function AuthModal() {
     const userProgressCtx = useContext(UserProgressContext);
     const isOpen = userProgressCtx.authView !== null && !authCtx.isLoggedIn;
 
-    // Auth method: "password" | "otp"
-    const [authMethod, setAuthMethod] = useState("password");
-    // For password method: "login" | "signup"
+    // Login mode: "otp" (default, Zomato-style) | "password"
+    const [loginMode, setLoginMode] = useState("otp");
     const [view, setView] = useState("login");
     const currentView = userProgressCtx.authView || view;
 
@@ -64,17 +63,16 @@ export default function AuthModal() {
         return () => clearInterval(timerRef.current);
     }, [resendTimer]);
 
-    const hasOtpMethods = otpConfig.emailOtp || otpConfig.phoneOtp;
-
     // ─── Handlers ──────────────────────────────────
 
     function handleClose() {
         userProgressCtx.hideAuth();
-        resetAll();
+        resetOtp();
+        setFormErrors({});
+        setLoginMode("otp");
     }
 
-    function resetAll() {
-        setFormErrors({});
+    function resetOtp() {
         setOtpStep("input");
         setOtpCode(["", "", "", "", "", ""]);
         setOtpName("");
@@ -84,12 +82,8 @@ export default function AuthModal() {
     function switchView(v) {
         userProgressCtx.showAuth(v);
         setFormErrors({});
-    }
-
-    function switchMethod(method) {
-        setAuthMethod(method);
-        setFormErrors({});
-        resetAll();
+        resetOtp();
+        setLoginMode("otp");
     }
 
     // ─── OTP Input Handling ──────────────────────────
@@ -311,31 +305,83 @@ export default function AuthModal() {
                     <div>
                         <h2 className="auth-modal-title">The Flavor Alchemist</h2>
                         <p className="auth-modal-subtitle">
-                            {authMethod === "otp"
-                                ? "Verify with a one-time code"
-                                : currentView === "login"
-                                    ? "Sign in to place your order"
-                                    : "Create an account to get started"}
+                            {currentView === "login"
+                                ? (loginMode === "otp"
+                                    ? (otpStep === "input" ? "Login with a one-time password" : "Enter the verification code")
+                                    : "Sign in to your account")
+                                : "Create an account to get started"}
                         </p>
                     </div>
                 </div>
 
-                {/* Method selector — Password vs OTP */}
-                {hasOtpMethods && (
-                    <div className="auth-method-selector">
-                        <button type="button" className={`auth-method-btn${authMethod === "password" ? " active" : ""}`} onClick={() => switchMethod("password")}>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                            Password
+                {/* ═══ LOGIN — OTP mode (default, Zomato-style) ═══ */}
+                {currentView === "login" && loginMode === "otp" && otpStep === "input" && (
+                    <form onSubmit={handleSendOtp} className="auth-modal-form" noValidate>
+                        {formErrors.submit && <p className="auth-modal-error-msg">{formErrors.submit}</p>}
+
+                        {/* Email/Phone toggle — only shown if phone OTP is configured */}
+                        {otpConfig.phoneOtp && (
+                            <div className="otp-type-toggle">
+                                <button type="button" className={`otp-type-btn${otpType === "email" ? " active" : ""}`}
+                                    onClick={() => { setOtpType("email"); setOtpDestination(""); setFormErrors({}); }}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                                    Email
+                                </button>
+                                <button type="button" className={`otp-type-btn${otpType === "phone" ? " active" : ""}`}
+                                    onClick={() => { setOtpType("phone"); setOtpDestination(""); setFormErrors({}); }}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                                    Phone
+                                </button>
+                            </div>
+                        )}
+
+                        <Input
+                            label={otpType === "email" ? "Email Address" : "Phone Number"}
+                            type={otpType === "email" ? "email" : "tel"}
+                            id="otp-destination"
+                            value={otpDestination}
+                            placeholder={otpType === "email" ? "you@example.com" : "+91XXXXXXXXXX"}
+                            onChange={(e) => { setOtpDestination(e.target.value); if (formErrors.destination) setFormErrors((p) => ({ ...p, destination: "" })); }}
+                            error={formErrors.destination}
+                        />
+
+                        <button type="submit" className="auth-modal-submit" disabled={authCtx.isLoading}>
+                            {authCtx.isLoading ? "Sending…" : "Send One Time Password"}
                         </button>
-                        <button type="button" className={`auth-method-btn${authMethod === "otp" ? " active" : ""}`} onClick={() => switchMethod("otp")}>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-                            OTP
+
+                        <div className="auth-modal-divider"><span>or</span></div>
+
+                        <button type="button" className="auth-modal-alt-btn" onClick={() => { setLoginMode("password"); setFormErrors({}); }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            Continue with Password
                         </button>
-                    </div>
+
+                        <p className="auth-modal-switch">New to The Flavor Alchemist? <button type="button" onClick={() => switchView("signup")}>Create account</button></p>
+                    </form>
                 )}
 
-                {/* ═══ PASSWORD: Login ═══ */}
-                {authMethod === "password" && currentView === "login" && (
+                {/* ═══ LOGIN — OTP verify ═══ */}
+                {currentView === "login" && loginMode === "otp" && otpStep === "otp-sent" && renderOtpBoxes(handleVerifyOtp)}
+
+                {/* ═══ LOGIN — OTP needs name (new user) ═══ */}
+                {currentView === "login" && loginMode === "otp" && otpStep === "needs-name" && (
+                    <form onSubmit={handleNameThenVerify} className="auth-modal-form" noValidate>
+                        {formErrors.submit && <p className="auth-modal-error-msg">{formErrors.submit}</p>}
+                        <p className="otp-new-user-msg">Welcome! We just need your name to create your account.</p>
+                        <Input label="Full Name" type="text" id="otp-name" value={otpName}
+                            onChange={(e) => { setOtpName(e.target.value); if (formErrors.name) setFormErrors((p) => ({ ...p, name: "" })); }}
+                            error={formErrors.name} />
+                        <button type="submit" className="auth-modal-submit" disabled={authCtx.isLoading}>
+                            {authCtx.isLoading ? "Sending new code…" : "Continue"}
+                        </button>
+                    </form>
+                )}
+
+                {/* ═══ LOGIN — OTP re-verify after name ═══ */}
+                {currentView === "login" && loginMode === "otp" && otpStep === "otp-sent-with-name" && renderOtpBoxes(handleVerifyOtpWithName)}
+
+                {/* ═══ LOGIN — Password mode ═══ */}
+                {currentView === "login" && loginMode === "password" && (
                     <form onSubmit={handleLoginSubmit} className="auth-modal-form" noValidate>
                         {formErrors.submit && <p className="auth-modal-error-msg">{formErrors.submit}</p>}
                         <Input label="Email Address" type="email" id="modal-email" value={loginData.email}
@@ -347,12 +393,20 @@ export default function AuthModal() {
                         <button type="submit" className="auth-modal-submit" disabled={authCtx.isLoading}>
                             {authCtx.isLoading ? "Signing in…" : "Login"}
                         </button>
-                        <p className="auth-modal-switch">Don't have an account? <button type="button" onClick={() => switchView("signup")}>Sign Up</button></p>
+
+                        <div className="auth-modal-divider"><span>or</span></div>
+
+                        <button type="button" className="auth-modal-alt-btn" onClick={() => { setLoginMode("otp"); setFormErrors({}); resetOtp(); }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                            Login with OTP instead
+                        </button>
+
+                        <p className="auth-modal-switch">New to The Flavor Alchemist? <button type="button" onClick={() => switchView("signup")}>Create account</button></p>
                     </form>
                 )}
 
-                {/* ═══ PASSWORD: Signup ═══ */}
-                {authMethod === "password" && currentView === "signup" && (
+                {/* ═══ SIGNUP ═══ */}
+                {currentView === "signup" && (
                     <form onSubmit={handleSignupSubmit} className="auth-modal-form" noValidate>
                         {formErrors.submit && <p className="auth-modal-error-msg">{formErrors.submit}</p>}
                         <Input label="Full Name" type="text" id="modal-name" value={signupData.name}
@@ -377,61 +431,6 @@ export default function AuthModal() {
                     </form>
                 )}
 
-                {/* ═══ OTP: Enter destination ═══ */}
-                {authMethod === "otp" && otpStep === "input" && (
-                    <form onSubmit={handleSendOtp} className="auth-modal-form" noValidate>
-                        {formErrors.submit && <p className="auth-modal-error-msg">{formErrors.submit}</p>}
-                        <div className="otp-type-toggle">
-                            {otpConfig.emailOtp && (
-                                <button type="button" className={`otp-type-btn${otpType === "email" ? " active" : ""}`}
-                                    onClick={() => { setOtpType("email"); setOtpDestination(""); setFormErrors({}); }}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-                                    Email
-                                </button>
-                            )}
-                            {otpConfig.phoneOtp && (
-                                <button type="button" className={`otp-type-btn${otpType === "phone" ? " active" : ""}`}
-                                    onClick={() => { setOtpType("phone"); setOtpDestination(""); setFormErrors({}); }}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-                                    Phone
-                                </button>
-                            )}
-                        </div>
-                        <Input
-                            label={otpType === "email" ? "Email Address" : "Phone Number"}
-                            type={otpType === "email" ? "email" : "tel"}
-                            id="otp-destination"
-                            value={otpDestination}
-                            placeholder={otpType === "email" ? "you@example.com" : "+91XXXXXXXXXX"}
-                            onChange={(e) => { setOtpDestination(e.target.value); if (formErrors.destination) setFormErrors((p) => ({ ...p, destination: "" })); }}
-                            error={formErrors.destination}
-                        />
-                        <button type="submit" className="auth-modal-submit" disabled={authCtx.isLoading}>
-                            {authCtx.isLoading ? "Sending…" : "Send OTP"}
-                        </button>
-                        <p className="auth-modal-switch">Prefer using a password? <button type="button" onClick={() => switchMethod("password")}>Use Password</button></p>
-                    </form>
-                )}
-
-                {/* ═══ OTP: Verify code ═══ */}
-                {authMethod === "otp" && otpStep === "otp-sent" && renderOtpBoxes(handleVerifyOtp)}
-
-                {/* ═══ OTP: New user — name needed ═══ */}
-                {authMethod === "otp" && otpStep === "needs-name" && (
-                    <form onSubmit={handleNameThenVerify} className="auth-modal-form" noValidate>
-                        {formErrors.submit && <p className="auth-modal-error-msg">{formErrors.submit}</p>}
-                        <p className="otp-new-user-msg">Welcome! We just need your name to set up your account.</p>
-                        <Input label="Full Name" type="text" id="otp-name" value={otpName}
-                            onChange={(e) => { setOtpName(e.target.value); if (formErrors.name) setFormErrors((p) => ({ ...p, name: "" })); }}
-                            error={formErrors.name} />
-                        <button type="submit" className="auth-modal-submit" disabled={authCtx.isLoading}>
-                            {authCtx.isLoading ? "Sending new code…" : "Continue"}
-                        </button>
-                    </form>
-                )}
-
-                {/* ═══ OTP: Re-verify after name collected ═══ */}
-                {authMethod === "otp" && otpStep === "otp-sent-with-name" && renderOtpBoxes(handleVerifyOtpWithName)}
             </div>
         </div>,
         document.getElementById("modal")

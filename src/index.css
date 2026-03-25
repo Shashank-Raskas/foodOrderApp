@@ -1493,44 +1493,53 @@ h1 {
   text-decoration: underline;
 }
 
-/* ── Method Selector (Password / OTP) ── */
-.auth-method-selector {
+/* ── "or" Divider ── */
+.auth-modal-divider {
   display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-  background: #161310;
-  border: 1px solid #2c2306;
-  border-radius: 10px;
-  padding: 4px;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 0;
 }
 
-.auth-method-btn {
+.auth-modal-divider::before,
+.auth-modal-divider::after {
+  content: "";
   flex: 1;
+  height: 1px;
+  background: #3a332a;
+}
+
+.auth-modal-divider span {
+  font-size: 0.78rem;
+  color: #78716c;
+  font-family: 'Lato', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Alt Login Button (Continue with Password / Login with OTP) ── */
+.auth-modal-alt-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 9px 12px;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 16px;
   background: transparent;
-  border: none;
-  border-radius: 7px;
-  color: #a8a29e;
-  font-size: 0.82rem;
+  border: 1.5px solid #3a332a;
+  border-radius: 8px;
+  color: #d9e2f1;
+  font-size: 0.85rem;
   font-weight: 600;
   font-family: 'Lato', sans-serif;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.auth-method-btn.active {
-  background: linear-gradient(135deg, #ffc404, #ffab04);
-  color: #2c2306;
-  box-shadow: 0 2px 8px rgba(255, 196, 4, 0.25);
-}
-
-.auth-method-btn:not(.active):hover {
-  color: #d9e2f1;
-  background: rgba(255, 255, 255, 0.04);
+.auth-modal-alt-btn:hover {
+  border-color: #ffc404;
+  color: #ffc404;
+  background: rgba(255, 196, 4, 0.06);
 }
 
 /* ── OTP Type Toggle (Email / Phone) ── */
