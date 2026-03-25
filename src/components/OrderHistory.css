@@ -1,0 +1,278 @@
+/* ==================== ORDER HISTORY CONTAINER ==================== */
+.order-history-container {
+    padding: 30px;
+    max-width: 700px;
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: fadeInUp 0.5s ease-out;
+}
+
+/* ==================== ORDER HISTORY HEADER ==================== */
+.order-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #d4a574;
+    margin-bottom: 25px;
+}
+
+.order-history-header h2 {
+    margin: 0;
+    color: #2c2306;
+    font-size: 24px;
+    font-family: 'Lato', sans-serif;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #d4a574;
+    transition: all 0.2s ease;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-btn:hover {
+    color: #ffc404;
+    transform: scale(1.1);
+}
+
+/* ==================== LOADING & ERROR STATES ==================== */
+.loading-state,
+.error-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #5a5451;
+    font-size: 16px;
+}
+
+.error-state {
+    color: #ff6b6b;
+}
+
+/* ==================== EMPTY STATE ==================== */
+.empty-orders {
+    text-align: center;
+    padding: 40px 20px;
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.empty-icon {
+    font-size: 64px;
+    margin-bottom: 15px;
+    animation: float 3s ease-in-out infinite;
+}
+
+.empty-text {
+    color: #2c2306;
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 10px 0;
+}
+
+.empty-hint {
+    color: #5a5451;
+    font-size: 14px;
+    margin: 0;
+}
+
+/* ==================== ORDERS LIST ==================== */
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* ==================== ORDER CARD ==================== */
+.order-card {
+    background: linear-gradient(135deg, #f5f0e8 0%, #e4ddd4 100%);
+    border: 2px solid #d4a574;
+    border-radius: 10px;
+    padding: 18px;
+    transition: all 0.3s ease;
+    animation: slideInLeft 0.4s ease-out;
+}
+
+.order-card:hover {
+    box-shadow: 0 8px 20px rgba(212, 165, 116, 0.3);
+    border-color: #ffc404;
+    transform: translateX(4px);
+}
+
+/* ==================== ORDER CARD HEADER ==================== */
+.order-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(212, 165, 116, 0.4);
+}
+
+.order-info h3 {
+    margin: 0 0 5px 0;
+    color: #2c2306;
+    font-size: 18px;
+    font-weight: 600;
+    font-family: 'Lato', sans-serif;
+}
+
+.order-date {
+    margin: 0;
+    color: #5a5451;
+    font-size: 12px;
+    font-style: italic;
+}
+
+.order-total {
+    text-align: right;
+}
+
+.total-label {
+    margin: 0 0 3px 0;
+    color: #5a5451;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.total-price {
+    margin: 0;
+    color: #ffc404;
+    font-size: 20px;
+    font-weight: 700;
+    font-family: 'Lato', sans-serif;
+}
+
+/* ==================== ORDER ITEMS ==================== */
+.order-items {
+    margin-bottom: 15px;
+}
+
+.order-items h4 {
+    margin: 0 0 10px 0;
+    color: #2c2306;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.order-items ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.order-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 4px;
+    font-size: 13px;
+    color: #2c2306;
+}
+
+.item-name {
+    flex: 1;
+    font-weight: 500;
+}
+
+.item-qty {
+    color: #5a5451;
+    margin: 0 8px;
+    min-width: 40px;
+    text-align: center;
+}
+
+.item-price {
+    font-weight: 600;
+    color: #ffc404;
+    min-width: 60px;
+    text-align: right;
+}
+
+/* ==================== ORDER CUSTOMER ==================== */
+.order-customer {
+    background: rgba(255, 255, 255, 0.5);
+    padding: 12px;
+    border-radius: 6px;
+}
+
+.order-customer h4 {
+    margin: 0 0 8px 0;
+    color: #2c2306;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.order-customer p {
+    margin: 0;
+    color: #5a5451;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+/* ==================== ANIMATIONS ==================== */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* ==================== SCROLLBAR STYLING ==================== */
+.order-history-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.order-history-container::-webkit-scrollbar-track {
+    background: rgba(212, 165, 116, 0.1);
+    border-radius: 10px;
+}
+
+.order-history-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #ffc404, #ffab04);
+    border-radius: 10px;
+}
+
+.order-history-container::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #ffb300, #ff9a00);
+}

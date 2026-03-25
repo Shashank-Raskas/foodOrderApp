@@ -52,6 +52,7 @@ export function AuthContextProvider({ children }) {
                 userId: data.userId,
                 email: data.email,
                 name: data.name,
+                createdAt: data.createdAt,
             };
             
             setUser(userData);
@@ -87,6 +88,7 @@ export function AuthContextProvider({ children }) {
                 userId: data.userId,
                 email: data.email,
                 name: data.name,
+                createdAt: data.createdAt,
             };
             
             setUser(userData);

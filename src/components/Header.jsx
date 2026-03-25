@@ -2,11 +2,13 @@ import { useContext } from 'react';
 import logo from '../assets/logo.jpg';
 import Button from './UI/Button';
 import CartContext from './store/CartContext';
+import FavoritesContext from './store/FavoritesContext';
 import UserProgressContext from './store/UserProgressContext';
 import AuthContext from './store/AuthContext';
 
 export default function Header() {
     const cartCtx = useContext(CartContext);
+    const favCtx = useContext(FavoritesContext);
     const userProgresCtx = useContext(UserProgressContext);
     const authCtx = useContext(AuthContext);
 
@@ -18,8 +20,16 @@ export default function Header() {
         userProgresCtx.showCart(); // Show the cart when the button is clicked
     }
 
+    function handleShowFavorites() {
+        userProgresCtx.showFavorites();
+    }
+
     function handleShowProfile() {
         userProgresCtx.showProfile();
+    }
+
+    function handleShowOrderHistory() {
+        userProgresCtx.showOrderHistory();
     }
 
     function handleLogout() {
@@ -42,6 +52,12 @@ export default function Header() {
                     >
                         👤 {authCtx.user.name}
                     </button>
+                    <Button onClick={handleShowFavorites} textOnly>
+                        ❤️ Favorites ({favCtx.favorites.length})
+                    </Button>
+                    <Button onClick={handleShowOrderHistory} textOnly>
+                        📦 Orders
+                    </Button>
                     <Button onClick={handleShowCart} textOnly>Cart ({totalCartItems})</Button>
                     <Button onClick={handleLogout} textOnly className="logout-btn">Logout</Button>
                 </>

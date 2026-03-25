@@ -6,9 +6,12 @@ import Meals from "./components/Meals";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import UserProfile from "./components/UserProfile";
+import Favorites from "./components/Favorites";
+import OrderHistory from "./components/OrderHistory";
 import { CartContextProvider } from "./components/store/CartContext";
 import { UserProgressContextProvider } from "./components/store/UserProgressContext";
 import { AuthContextProvider } from "./components/store/AuthContext";
+import { FavoritesContextProvider } from "./components/store/FavoritesContext";
 import AuthContext from "./components/store/AuthContext";
 
 function AppContent() {
@@ -26,11 +29,15 @@ function AppContent() {
   return (
     <UserProgressContextProvider>
       <CartContextProvider>
-        <Header />
-        <Meals />
-        <Cart />
-        <Checkout />
-        <UserProfile />
+        <FavoritesContextProvider>
+          <Header />
+          <Meals />
+          <Cart />
+          <Checkout />
+          <UserProfile />
+          <Favorites />
+          <OrderHistory />
+        </FavoritesContextProvider>
       </CartContextProvider>
     </UserProgressContextProvider>
   );

@@ -1,0 +1,207 @@
+/* ==================== FAVORITES CONTAINER ==================== */
+.favorites-container {
+    padding: 30px;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: fadeInUp 0.5s ease-out;
+}
+
+/* ==================== FAVORITES HEADER ==================== */
+.favorites-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #d4a574;
+    margin-bottom: 25px;
+}
+
+.favorites-header h2 {
+    margin: 0;
+    color: #2c2306;
+    font-size: 24px;
+    font-family: 'Lato', sans-serif;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #d4a574;
+    transition: all 0.2s ease;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-btn:hover {
+    color: #ffc404;
+    transform: scale(1.1);
+}
+
+/* ==================== EMPTY STATE ==================== */
+.empty-favorites {
+    text-align: center;
+    padding: 40px 20px;
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.empty-icon {
+    font-size: 64px;
+    margin-bottom: 15px;
+    animation: float 3s ease-in-out infinite;
+}
+
+.empty-text {
+    color: #2c2306;
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 10px 0;
+}
+
+.empty-hint {
+    color: #5a5451;
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* ==================== FAVORITES LIST ==================== */
+.favorites-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.favorite-item {
+    display: flex;
+    gap: 15px;
+    padding: 15px;
+    background: linear-gradient(135deg, #f5f0e8 0%, #e4ddd4 100%);
+    border-radius: 8px;
+    border: 2px solid #d4a574;
+    align-items: center;
+    transition: all 0.3s ease;
+    animation: slideInLeft 0.4s ease-out;
+}
+
+.favorite-item:hover {
+    box-shadow: 0 6px 16px rgba(212, 165, 116, 0.3);
+    transform: translateX(4px);
+    border-color: #ffc404;
+}
+
+.fav-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.fav-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.fav-info h3 {
+    margin: 0 0 5px 0;
+    color: #2c2306;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: 'Lato', sans-serif;
+}
+
+.fav-description {
+    color: #5a5451;
+    font-size: 12px;
+    margin: 0 0 8px 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.fav-price {
+    color: #ffc404;
+    font-weight: 700;
+    font-size: 14px;
+    margin: 0;
+}
+
+.remove-fav-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.remove-fav-btn:hover {
+    transform: scale(1.2) rotate(-15deg);
+}
+
+.remove-fav-btn:active {
+    transform: scale(0.95);
+}
+
+/* ==================== ANIMATIONS ==================== */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* ==================== SCROLLBAR STYLING ==================== */
+.favorites-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.favorites-container::-webkit-scrollbar-track {
+    background: rgba(212, 165, 116, 0.1);
+    border-radius: 10px;
+}
+
+.favorites-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #ffc404, #ffab04);
+    border-radius: 10px;
+}
+
+.favorites-container::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #ffb300, #ff9a00);
+}

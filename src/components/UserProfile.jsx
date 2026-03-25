@@ -153,15 +153,20 @@ export default function UserProfile() {
     }
 
     const userInitial = authCtx.user?.name?.[0]?.toUpperCase() || '👤';
-    const joinDate = new Date().toLocaleDateString('en-US', { 
+    const joinDate = authCtx.user?.createdAt ? new Date(authCtx.user.createdAt).toLocaleDateString('en-US', { 
         year: 'numeric', 
         month: 'long', 
         day: 'numeric' 
-    });
+    }) : 'Unknown';
 
     return (
         <Modal open={userProgressCtx.progress === 'profile'} onClose={handleClose}>
             <div className="user-profile-container">
+                {/* Close Button - Top Right */}
+                <button className="profile-close-btn" onClick={handleClose} title="Close">
+                    ✕
+                </button>
+
                 {/* Profile Header */}
                 <div className="profile-header">
                     <div className="user-avatar">{userInitial}</div>
@@ -299,12 +304,6 @@ export default function UserProfile() {
                     </form>
                 )}
 
-                {/* Close Button */}
-                <div className="profile-footer">
-                    <button className="close-btn" onClick={handleClose}>
-                        ✕ Close
-                    </button>
-                </div>
             </div>
         </Modal>
     );

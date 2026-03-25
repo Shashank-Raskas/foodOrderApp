@@ -59,8 +59,8 @@ export default function Checkout() {
             order: {
                 items: cartCtx.items,
                 customer: customerData,
-                userId: authCtx.user.userId,
             },
+            userId: authCtx.user.userId,
         }));
     }
 

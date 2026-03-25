@@ -98,6 +98,7 @@ app.post('/api/signup', async (req, res) => {
       userId,
       email: newUser.email,
       name: newUser.name,
+      createdAt: newUser.createdAt,
     });
   } catch (err) {
     console.error('Signup error:', err);
@@ -145,6 +146,7 @@ app.post('/api/login', async (req, res) => {
       userId: user.userId,
       email: user.email,
       name: user.name,
+      createdAt: user.createdAt,
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -259,9 +261,14 @@ app.put('/api/user/change-password', async (req, res) => {
 
 app.post('/api/orders', async (req, res) => {
   const orderData = req.body.order;
+  const { userId } = req.body;
 
   if (!orderData || !orderData.items || orderData.items.length === 0) {
     return res.status(400).json({ message: 'Missing data.' });
+  }
+
+  if (!userId) {
+    return res.status(400).json({ message: 'User ID is required.' });
   }
 
   const customer = orderData.customer;
@@ -279,6 +286,7 @@ app.post('/api/orders', async (req, res) => {
 
   const newOrder = {
     ...orderData,
+    userId: userId,
     id: uuidv4(),
     createdAt: new Date().toISOString()
   };
@@ -289,6 +297,49 @@ app.post('/api/orders', async (req, res) => {
   } catch (err) {
     console.error('Failed to save to Firebase:', err);
     res.status(500).json({ message: 'Failed to save order.' });
+  }
+});
+
+// Get user's order history
+app.get('/api/user/orders', async (req, res) => {
+  const { userId } = req.query;
+
+  if (!userId) {
+    return res.status(400).json({ message: 'User ID is required.' });
+  }
+
+  try {
+    console.log('[Backend] Fetching orders for userId:', userId);
+    
+    const ordersSnapshot = await db
+      .collection('orders')
+      .where('userId', '==', userId)
+      .get();
+
+    const orders = [];
+    ordersSnapshot.forEach(doc => {
+      orders.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+
+    // Sort by createdAt in descending order (most recent first)
+    orders.sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0);
+      const dateB = new Date(b.createdAt || 0);
+      return dateB - dateA;
+    });
+
+    console.log('[Backend] Found', orders.length, 'orders');
+    res.status(200).json({
+      message: 'Orders fetched successfully!',
+      orders: orders,
+      count: orders.length
+    });
+  } catch (err) {
+    console.error('[Backend] Failed to fetch orders:', err);
+    res.status(500).json({ message: 'Failed to fetch orders.', error: err.message });
   }
 });
 
