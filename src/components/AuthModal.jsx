@@ -153,12 +153,6 @@ export default function AuthModal() {
                         <button type="submit" className="auth-modal-submit" disabled={authCtx.isLoading}>
                             {authCtx.isLoading ? "Signing in…" : "Login"}
                         </button>
-                        <p className="auth-modal-switch">
-                            Don't have an account?{" "}
-                            <button type="button" onClick={() => switchView("signup")}>
-                                Sign Up
-                            </button>
-                        </p>
                     </form>
                 )}
 
@@ -218,12 +212,6 @@ export default function AuthModal() {
                         <button type="submit" className="auth-modal-submit" disabled={authCtx.isLoading}>
                             {authCtx.isLoading ? "Creating account…" : "Create Account"}
                         </button>
-                        <p className="auth-modal-switch">
-                            Already have an account?{" "}
-                            <button type="button" onClick={() => switchView("login")}>
-                                Login
-                            </button>
-                        </p>
                     </form>
                 )}
             </div>

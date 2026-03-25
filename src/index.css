@@ -1533,31 +1533,6 @@ h1 {
   cursor: not-allowed;
 }
 
-.auth-modal-switch {
-  text-align: center;
-  margin: 14px 0 0;
-  font-size: 0.82rem;
-  color: #a8a29e;
-  font-family: 'Lato', sans-serif;
-}
-
-.auth-modal-switch button {
-  background: none;
-  border: none;
-  color: #ffc404;
-  font-weight: 600;
-  font-family: 'Lato', sans-serif;
-  font-size: 0.82rem;
-  cursor: pointer;
-  padding: 0;
-  transition: color 0.2s;
-}
-
-.auth-modal-switch button:hover {
-  color: #ffb300;
-  text-decoration: underline;
-}
-
 /* error-text inside Input component */
 .auth-modal-form .error-text {
   font-size: 0.75rem;
