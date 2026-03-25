@@ -148,9 +148,9 @@
   },
   {
     "id": "m22",
-    "name": "Chicken Biryani",
+    "name": "Hyderabadi Chicken Biryani",
     "price": "499",
-    "description": "Fragrant basmati rice layered with spiced chicken, caramelized onions, and saffron. A royal Indian delicacy.",
+    "description": "Fragrant basmati rice layered with spiced chicken, caramelized onions, and saffron. A royal Hyderabadi delicacy.",
     "image": "images/chicken-biryani.jpg"
   },
   {
@@ -243,5 +243,285 @@
     "price": "249",
     "description": "Crispy fried rolls stuffed with seasoned vegetables and glass noodles, served with sweet chili dipping sauce.",
     "image": "images/spring-rolls.jpg"
+  },
+  {
+    "id": "m36",
+    "name": "Dal Makhani",
+    "price": "450",
+    "description": "Rich and creamy black lentils slow-cooked overnight with butter, cream, and aromatic spices. A classic Punjabi delicacy.",
+    "image": "images/dal-makhani.jpg"
+  },
+  {
+    "id": "m37",
+    "name": "Tandoori Chicken",
+    "price": "550",
+    "description": "Succulent chicken marinated in yogurt and tandoori spices, roasted in a clay oven until charred and smoky.",
+    "image": "images/tandoori-chicken.jpg"
+  },
+  {
+    "id": "m38",
+    "name": "Masala Dosa",
+    "price": "199",
+    "description": "Crispy golden crepe made from fermented rice batter, stuffed with spiced potato filling, served with sambar and chutneys.",
+    "image": "images/masala-dosa.jpg"
+  },
+  {
+    "id": "m39",
+    "name": "Pav Bhaji",
+    "price": "249",
+    "description": "A medley of mashed vegetables in a spicy tomato-based gravy, served with buttered bread rolls and fresh onions.",
+    "image": "images/pav-bhaji.jpg"
+  },
+  {
+    "id": "m40",
+    "name": "Gulab Jamun",
+    "price": "179",
+    "description": "Soft, spongy milk-solid dumplings deep-fried and soaked in rose-flavored sugar syrup. An iconic Indian dessert.",
+    "image": "images/gulab-jamun.jpg"
+  },
+  {
+    "id": "m41",
+    "name": "Chole Bhature",
+    "price": "249",
+    "description": "Fluffy deep-fried bread paired with spicy chickpea curry, garnished with onions and tangy pickle.",
+    "image": "images/chole-bhature.jpg"
+  },
+  {
+    "id": "m42",
+    "name": "Palak Paneer",
+    "price": "399",
+    "description": "Fresh cottage cheese cubes simmered in a vibrant, creamy spinach gravy with garlic and Indian spices.",
+    "image": "images/palak-paneer.jpg"
+  },
+  {
+    "id": "m43",
+    "name": "Malai Kofta",
+    "price": "449",
+    "description": "Crispy paneer and potato dumplings served in a rich, creamy tomato-cashew gravy with a hint of sweetness.",
+    "image": "images/malai-kofta.jpg"
+  },
+  {
+    "id": "m44",
+    "name": "Aloo Paratha",
+    "price": "199",
+    "description": "Whole wheat bread stuffed with spiced mashed potatoes, pan-fried with butter. Served with curd and pickle.",
+    "image": "images/aloo-paratha.jpg"
+  },
+  {
+    "id": "m45",
+    "name": "Rasmalai",
+    "price": "199",
+    "description": "Soft, flattened cottage cheese dumplings soaked in chilled, cardamom-flavored sweetened milk with pistachios.",
+    "image": "images/rasmalai.jpg"
+  },
+  {
+    "id": "m46",
+    "name": "Chicken Tikka Masala",
+    "price": "520",
+    "description": "Tender chicken tikka pieces simmered in a creamy, spiced tomato-based masala sauce. A global favorite.",
+    "image": "images/chicken-tikka-masala.jpg"
+  },
+  {
+    "id": "m47",
+    "name": "Lamb Biryani",
+    "price": "599",
+    "description": "Aromatic basmati rice layered with tender lamb, caramelized onions, saffron, and fresh herbs.",
+    "image": "images/lamb-biryani.jpg"
+  },
+  {
+    "id": "m48",
+    "name": "Grilled Salmon",
+    "price": "899",
+    "description": "Fresh Atlantic salmon fillet grilled to perfection with lemon, herbs, and served with seasonal vegetables.",
+    "image": "images/grilled-salmon.jpg"
+  },
+  {
+    "id": "m49",
+    "name": "Herb Crusted Fish",
+    "price": "750",
+    "description": "Delicate fish fillet coated in a fragrant herb crust, pan-seared and served with fresh green beans.",
+    "image": "images/herb-crusted-fish.jpg"
+  },
+  {
+    "id": "m50",
+    "name": "Teriyaki Salmon Bowl",
+    "price": "820",
+    "description": "Glazed teriyaki salmon served on a bed of steamed rice with pine nuts, microgreens, and sesame.",
+    "image": "images/teriyaki-salmon-bowl.jpg"
+  },
+  {
+    "id": "m51",
+    "name": "Pan Seared Sea Bass",
+    "price": "950",
+    "description": "Chilean sea bass pan-seared to a golden crust, served with a light basil garnish and citrus reduction.",
+    "image": "images/pan-seared-sea-bass.jpg"
+  },
+  {
+    "id": "m52",
+    "name": "Vietnamese Pho",
+    "price": "450",
+    "description": "Traditional Vietnamese rice noodle soup with aromatic broth, fresh herbs, bean sprouts, and tender beef.",
+    "image": "images/vietnamese-pho.jpg"
+  },
+  {
+    "id": "m53",
+    "name": "Seafood Noodle Soup",
+    "price": "520",
+    "description": "A hearty bowl of noodle soup loaded with shrimp, herbs, and a rich, savory broth.",
+    "image": "images/seafood-noodle-soup.jpg"
+  },
+  {
+    "id": "m54",
+    "name": "Tom Yum Soup",
+    "price": "420",
+    "description": "Spicy and sour Thai soup with lemongrass, galangal, kaffir lime, mushrooms, and juicy prawns.",
+    "image": "images/tom-yum-soup.jpg"
+  },
+  {
+    "id": "m55",
+    "name": "BBQ Ribs",
+    "price": "799",
+    "description": "Slow-smoked pork ribs glazed with smoky BBQ sauce, served with fresh herbs on a rustic stone platter.",
+    "image": "images/bbq-ribs.jpg"
+  },
+  {
+    "id": "m56",
+    "name": "Lamb Chops",
+    "price": "999",
+    "description": "Premium lamb chops grilled to a perfect medium, served with rosemary jus and roasted vegetables.",
+    "image": "images/lamb-chops.jpg"
+  },
+  {
+    "id": "m57",
+    "name": "Grilled Pork Belly",
+    "price": "650",
+    "description": "Crispy-skinned pork belly slow-roasted and grilled, served with mixed vegetables and tangy sauce.",
+    "image": "images/grilled-pork-belly.jpg"
+  },
+  {
+    "id": "m58",
+    "name": "Smoky BBQ Platter",
+    "price": "1199",
+    "description": "A generous platter of smoky ribs, pulled pork, and sides on a rustic wooden board with signature sauces.",
+    "image": "images/smoky-bbq-platter.jpg"
+  },
+  {
+    "id": "m59",
+    "name": "Greek Salad",
+    "price": "350",
+    "description": "Fresh cucumbers, tomatoes, red onions, and olives topped with crumbled feta cheese and olive oil dressing.",
+    "image": "images/greek-salad.jpg"
+  },
+  {
+    "id": "m60",
+    "name": "Mediterranean Bowl",
+    "price": "420",
+    "description": "A vibrant bowl with mixed greens, cherry tomatoes, olives, feta, and a drizzle of balsamic vinaigrette.",
+    "image": "images/mediterranean-bowl.jpg"
+  },
+  {
+    "id": "m61",
+    "name": "Chips & Guacamole",
+    "price": "299",
+    "description": "Crispy tortilla chips served with freshly made guacamole, corn salsa, and a creamy cheese dip.",
+    "image": "images/chips-and-guacamole.jpg"
+  },
+  {
+    "id": "m62",
+    "name": "Loaded Nachos",
+    "price": "399",
+    "description": "Crispy nachos loaded with melted cheese, guacamole, sour cream, salsa, and topped with fresh chives.",
+    "image": "images/loaded-nachos.jpg"
+  },
+  {
+    "id": "m63",
+    "name": "Curry & Naan Combo",
+    "price": "349",
+    "description": "Aromatic curry served in a traditional copper dish with freshly baked garlic naan. A complete meal.",
+    "image": "images/curry-and-naan.jpg"
+  },
+  {
+    "id": "m64",
+    "name": "Creme Brulee",
+    "price": "349",
+    "description": "Classic French custard with a crisp, caramelized sugar top, served in an elegant white ramekin.",
+    "image": "images/creme-brulee.jpg"
+  },
+  {
+    "id": "m65",
+    "name": "Baklava",
+    "price": "299",
+    "description": "Layers of flaky phyllo pastry filled with chopped pistachios and walnuts, drenched in honey syrup.",
+    "image": "images/baklava.jpg"
+  },
+  {
+    "id": "m66",
+    "name": "Caramel Flan",
+    "price": "279",
+    "description": "Silky smooth custard topped with a luscious caramel sauce, garnished with fresh berries.",
+    "image": "images/caramel-flan.jpg"
+  },
+  {
+    "id": "m67",
+    "name": "Indian Sweet Box",
+    "price": "249",
+    "description": "An assortment of traditional Indian sweets including gulab jamun, served in a festive clay pot.",
+    "image": "images/indian-sweet-box.jpg"
+  },
+  {
+    "id": "m68",
+    "name": "Lentil Soup",
+    "price": "320",
+    "description": "Hearty and warming lentil soup with vegetables and aromatic spices, served with steamed rice.",
+    "image": "images/lentil-soup.jpg"
+  },
+  {
+    "id": "m69",
+    "name": "Paneer Curry Bowl",
+    "price": "420",
+    "description": "Rich and creamy paneer curry served in a traditional clay bowl, garnished with fresh herbs and spices.",
+    "image": "images/paneer-curry-bowl.jpg"
+  },
+  {
+    "id": "m70",
+    "name": "Yellow Dal Tadka",
+    "price": "299",
+    "description": "Comforting yellow lentils tempered with cumin, garlic, and ghee, served with steamed basmati rice.",
+    "image": "images/yellow-dal-tadka.jpg"
+  },
+  {
+    "id": "m71",
+    "name": "Chicken Korma",
+    "price": "520",
+    "description": "Tender chicken pieces in a mild, creamy sauce with cashews, coconut, and fragrant cardamom.",
+    "image": "images/chicken-korma.jpg"
+  },
+  {
+    "id": "m72",
+    "name": "Spicy Grilled Chicken",
+    "price": "480",
+    "description": "Juicy chicken marinated in a fiery spice blend, grilled with cilantro and lime. Perfect for spice lovers.",
+    "image": "images/spicy-grilled-chicken.jpg"
+  },
+  {
+    "id": "m73",
+    "name": "Dum Biryani",
+    "price": "549",
+    "description": "Slow-cooked biryani sealed with dough, infused with saffron, cashews, and aromatic whole spices.",
+    "image": "images/dum-biryani.jpg"
+  },
+  {
+    "id": "m74",
+    "name": "Indian Thali",
+    "price": "649",
+    "description": "A grand platter featuring an assortment of curries, dal, rice, bread, raita, and traditional desserts.",
+    "image": "images/indian-thali.jpg"
+  },
+  {
+    "id": "m75",
+    "name": "Mughlai Biryani",
+    "price": "599",
+    "description": "Royal Mughlai-style biryani with tender meat, fragrant rice, yogurt, and lemon. A feast for the senses.",
+    "image": "images/mughlai-biryani.jpg"
   }
 ]
