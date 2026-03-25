@@ -1413,36 +1413,30 @@ h1 {
   font-family: 'Lato', sans-serif;
 }
 
-/* Tabs */
-.auth-modal-tabs {
-  display: flex;
-  border-bottom: 2px solid #3a332a;
-  margin-bottom: 24px;
+/* Switch link */
+.auth-modal-switch {
+  text-align: center;
+  margin-top: 14px;
+  font-size: 0.82rem;
+  color: #a8a29e;
+  font-family: 'Lato', sans-serif;
 }
 
-.auth-tab {
-  flex: 1;
-  padding: 10px;
+.auth-modal-switch button {
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  color: #a8a29e;
-  font-size: 0.9rem;
-  font-weight: 600;
+  color: #ffc404;
+  font-weight: 700;
+  font-size: 0.82rem;
   font-family: 'Lato', sans-serif;
   cursor: pointer;
-  transition: all 0.2s ease;
-  letter-spacing: 0.03em;
+  padding: 0;
+  transition: color 0.2s ease;
 }
 
-.auth-tab.active {
-  color: #ffc404;
-  border-bottom-color: #ffc404;
-}
-
-.auth-tab:hover:not(.active) {
-  color: #d9e2f1;
+.auth-modal-switch button:hover {
+  color: #e6ac00;
+  text-decoration: underline;
 }
 
 /* Form */

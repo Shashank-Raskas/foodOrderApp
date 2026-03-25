@@ -104,24 +104,6 @@ export default function AuthModal() {
                     </div>
                 </div>
 
-                {/* Tab switcher */}
-                <div className="auth-modal-tabs">
-                    <button
-                        className={`auth-tab${currentView === "login" ? " active" : ""}`}
-                        onClick={() => switchView("login")}
-                        type="button"
-                    >
-                        Login
-                    </button>
-                    <button
-                        className={`auth-tab${currentView === "signup" ? " active" : ""}`}
-                        onClick={() => switchView("signup")}
-                        type="button"
-                    >
-                        Sign Up
-                    </button>
-                </div>
-
                 {/* Login form */}
                 {currentView === "login" && (
                     <form onSubmit={handleLoginSubmit} className="auth-modal-form" noValidate>
@@ -153,6 +135,7 @@ export default function AuthModal() {
                         <button type="submit" className="auth-modal-submit" disabled={authCtx.isLoading}>
                             {authCtx.isLoading ? "Signing in…" : "Login"}
                         </button>
+                        <p className="auth-modal-switch">Don't have an account? <button type="button" onClick={() => switchView("signup")}>Sign Up</button></p>
                     </form>
                 )}
 
@@ -206,12 +189,15 @@ export default function AuthModal() {
                             }}
                             error={formErrors.confirmPassword}
                         />
-                        <p className="auth-modal-hint">
-                            Password: min 6 chars, uppercase, lowercase &amp; number
-                        </p>
+                        {signupData.password.length > 0 && (signupData.password.length < 6 || !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(signupData.password)) && (
+                            <p className="auth-modal-hint">
+                                Password: min 6 chars, uppercase, lowercase &amp; number
+                            </p>
+                        )}
                         <button type="submit" className="auth-modal-submit" disabled={authCtx.isLoading}>
                             {authCtx.isLoading ? "Creating account…" : "Create Account"}
                         </button>
+                        <p className="auth-modal-switch">Already have an account? <button type="button" onClick={() => switchView("login")}>Login</button></p>
                     </form>
                 )}
             </div>
