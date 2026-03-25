@@ -1,4 +1,4 @@
-import { createContext, useReducer, useEffect, useState, useContext } from "react";
+import { createContext, useReducer, useEffect, useRef, useContext } from "react";
 import AuthContext from "./AuthContext";
 
 const CartContext = createContext({
@@ -52,7 +52,7 @@ export function CartContextProvider({ children }) {
     const authCtx = useContext(AuthContext);
     const userId = authCtx?.user?.userId;
     const [cart, dispatchCartAction] = useReducer(cartReducer, { items: [] });
-    const [isLoaded, setIsLoaded] = useState(false);
+    const skipSaveRef = useRef(true);
 
     function getStorageKey(uid) {
         return uid ? `cart_${uid}` : 'cart_guest';
@@ -60,7 +60,7 @@ export function CartContextProvider({ children }) {
 
     // Load cart from localStorage when user changes
     useEffect(() => {
-        setIsLoaded(false);
+        skipSaveRef.current = true;
         const storageKey = getStorageKey(userId);
         const stored = localStorage.getItem(storageKey);
         if (stored) {
@@ -74,15 +74,17 @@ export function CartContextProvider({ children }) {
         } else {
             dispatchCartAction({ type: 'CLEAR_CART' });
         }
-        setIsLoaded(true);
     }, [userId]);
 
-    // Save cart to localStorage — only after initial load
+    // Save cart to localStorage — skips one cycle after user switch
     useEffect(() => {
-        if (!isLoaded) return;
+        if (skipSaveRef.current) {
+            skipSaveRef.current = false;
+            return;
+        }
         const storageKey = getStorageKey(userId);
         localStorage.setItem(storageKey, JSON.stringify(cart.items));
-    }, [cart.items, userId, isLoaded]);
+    }, [cart.items, userId]);
 
     function addItem(item) {
         dispatchCartAction({ type: 'ADD_ITEM', item });

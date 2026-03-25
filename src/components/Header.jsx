@@ -39,7 +39,6 @@ export default function Header() {
 
     function handleLogout() {
         authCtx.logout();
-        cartCtx.clearCart();
     }
 
     return (
