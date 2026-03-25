@@ -1,4 +1,5 @@
-import { createContext, useReducer } from "react";
+import { createContext, useReducer, useEffect, useState, useContext } from "react";
+import AuthContext from "./AuthContext";
 
 const CartContext = createContext({
     items: [],
@@ -24,68 +25,81 @@ function cartReducer(state, action) {
             updatedItems.push({ ...action.item, quantity: 1 });
         }
 
-        return {
-            ...state,
-            items: updatedItems,
-        };
+        return { ...state, items: updatedItems };
     }
     if (action.type === 'REMOVE_ITEM') {
-        const existingCartItemIndex = state.items.findIndex(item => item.id === action.id); //? find the index of the item to be removed in the cart
-
-        const existingCartItem = state.items[existingCartItemIndex]; //? get the item to be removed from the cart
-
-        const updatedItems = [...state.items]; // create a copy of the items array to avoid mutating the state directly
+        const existingCartItemIndex = state.items.findIndex(item => item.id === action.id);
+        const existingCartItem = state.items[existingCartItemIndex];
+        const updatedItems = [...state.items];
 
         if (existingCartItem.quantity === 1) {
-            updatedItems.splice(existingCartItemIndex, 1); // remove the item from the array
+            updatedItems.splice(existingCartItemIndex, 1);
+        } else {
+            updatedItems[existingCartItemIndex] = { ...existingCartItem, quantity: existingCartItem.quantity - 1 };
         }
-        else {
-            const updatedItem = {
-                ...existingCartItem,
-                quantity: existingCartItem.quantity - 1,
-            }
-            updatedItems[existingCartItemIndex] = updatedItem; // update the item in the array
-        }
-        return {
-            ...state,
-            items: updatedItems,
-        };
+        return { ...state, items: updatedItems };
     }
     if (action.type === 'CLEAR_CART') {
-        return {
-           ...state, items: [],
-        };
+        return { ...state, items: [] };
+    }
+    if (action.type === 'LOAD_CART') {
+        return { ...state, items: action.items };
     }
     return state;
 }
 
 export function CartContextProvider({ children }) {
-
+    const authCtx = useContext(AuthContext);
+    const userId = authCtx?.user?.userId;
     const [cart, dispatchCartAction] = useReducer(cartReducer, { items: [] });
+    const [isLoaded, setIsLoaded] = useState(false);
 
-    
-    
-    function addItem(item) {
-        dispatchCartAction({ type: 'ADD_ITEM', item: item });
-        
+    function getStorageKey(uid) {
+        return uid ? `cart_${uid}` : 'cart_guest';
     }
-    function removeItem(id){
+
+    // Load cart from localStorage when user changes
+    useEffect(() => {
+        setIsLoaded(false);
+        const storageKey = getStorageKey(userId);
+        const stored = localStorage.getItem(storageKey);
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                dispatchCartAction({ type: 'LOAD_CART', items: parsed });
+            } catch {
+                localStorage.removeItem(storageKey);
+                dispatchCartAction({ type: 'CLEAR_CART' });
+            }
+        } else {
+            dispatchCartAction({ type: 'CLEAR_CART' });
+        }
+        setIsLoaded(true);
+    }, [userId]);
+
+    // Save cart to localStorage — only after initial load
+    useEffect(() => {
+        if (!isLoaded) return;
+        const storageKey = getStorageKey(userId);
+        localStorage.setItem(storageKey, JSON.stringify(cart.items));
+    }, [cart.items, userId, isLoaded]);
+
+    function addItem(item) {
+        dispatchCartAction({ type: 'ADD_ITEM', item });
+    }
+    function removeItem(id) {
         dispatchCartAction({ type: 'REMOVE_ITEM', id });
     }
     function clearCart() {
         dispatchCartAction({ type: 'CLEAR_CART' });
+        if (userId) {
+            localStorage.removeItem(getStorageKey(userId));
+        }
     }
 
-    const cartContext = {
-        items: cart.items,
-        addItem,
-        removeItem,
-        clearCart,
-    };
+    const cartContext = { items: cart.items, addItem, removeItem, clearCart };
 
-    return <CartContext value={cartContext}>{children}</CartContext>
+    return <CartContext.Provider value={cartContext}>{children}</CartContext.Provider>
 }
 
 export default CartContext;
-
-//!cretecontext is used to create a context object, which can be used to share data between components without having to pass props down manually at every level.

@@ -52,30 +52,29 @@ export default function MealItem({meal}) {
                 </svg>
             </button>
             <img src={`${API_URL}/${meal.image}`} alt={meal.name}/>
-            <div>
+            <div className="meal-item-body">
                 <h3>{meal.name}</h3>
                 <p className="meal-item-price">{currencyFormatter.format(meal.price)}</p>
                 <p className="meal-item-description">{meal.description}</p>
             </div>
-            <p className="meal-item-actions">
+            <div className="meal-item-footer">
                 {!itemInCart ? (
-                    // Initial state: single + button
-                    <button 
-                        className="qty-add-btn" 
-                        onClick={handleAddToCart}
-                        title="Add to cart"
-                    >
-                        +
+                    <button className="add-to-cart-btn" onClick={handleAddToCart}>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="cart-add-icon">
+                            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+                            <line x1="3" y1="6" x2="21" y2="6"/>
+                            <path d="M16 10a4 4 0 01-8 0"/>
+                        </svg>
+                        Add to Cart
                     </button>
                 ) : (
-                    // Active state: - qty +
                     <div className="quantity-selector active">
                         <button className="qty-btn qty-minus" onClick={handleDecreaseQty}>−</button>
                         <span className="qty-display">{itemInCart.quantity}</span>
                         <button className="qty-btn qty-plus" onClick={handleIncreaseQty}>+</button>
                     </div>
                 )}
-            </p>
+            </div>
         </article>
         </li>
 }
