@@ -5,14 +5,17 @@ import CartContext from './store/CartContext';
 import FavoritesContext from './store/FavoritesContext';
 import UserProgressContext from './store/UserProgressContext';
 import AuthContext from './store/AuthContext';
+import SearchContext from './store/SearchContext';
 
 export default function Header() {
     const cartCtx = useContext(CartContext);
     const favCtx = useContext(FavoritesContext);
     const userProgresCtx = useContext(UserProgressContext);
     const authCtx = useContext(AuthContext);
+    const { searchTerm, setSearchTerm } = useContext(SearchContext);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const searchInputRef = useRef(null);
 
     const totalCartItems = cartCtx.items.reduce((total, item) => total + item.quantity, 0);
     const userInitial = authCtx.user?.name?.[0]?.toUpperCase() || '?';
@@ -41,12 +44,44 @@ export default function Header() {
         authCtx.logout();
     }
 
+    // search is always visible in header; input ref available for programmatic focus
+    useEffect(() => {
+        // placeholder for any header search lifecycle logic
+    }, []);
+
     return (
         <header id="main-header">
             <div id="title">
                 <img src={logo} alt="A restaurant" />
                 <h1>The Flavor Alchemist</h1>
             </div>
+
+            <div className="header-search header-search-bar">
+                <div className="header-search-field">
+                    <svg className="header-search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input
+                        ref={searchInputRef}
+                        type="text"
+                        placeholder="Search meals..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="header-search-input"
+                    />
+                    {searchTerm && (
+                        <button
+                            className="header-search-clear"
+                            onClick={() => setSearchTerm('')}
+                            title="Clear search"
+                        >
+                            ✕
+                        </button>
+                    )}
+                </div>
+            </div>
+
             <nav>
                 {authCtx.isLoggedIn ? (
                     <>

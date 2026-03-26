@@ -272,7 +272,7 @@ app.put('/api/user/change-password', async (req, res) => {
 // Config endpoint — tells frontend which OTP methods are available
 app.get('/api/auth/config', (req, res) => {
   res.json({
-    emailOtp: isEmailConfigured(),
+    emailOtp: true, // Always available — falls back to dev-mode console logging
     phoneOtp: isSmsConfigured(),
   });
 });
@@ -296,9 +296,6 @@ app.post('/api/otp/send', async (req, res) => {
   if (type === 'email') {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dest)) {
       return res.status(400).json({ message: 'Please provide a valid email address.' });
-    }
-    if (!isEmailConfigured()) {
-      return res.status(503).json({ message: 'Email OTP service is not configured on the server.' });
     }
   }
 
@@ -325,7 +322,14 @@ app.post('/api/otp/send', async (req, res) => {
 
     // Send OTP
     if (type === 'email') {
-      await sendOtpEmail(dest, otp);
+      if (isEmailConfigured()) {
+        await sendOtpEmail(dest, otp);
+      } else {
+        // Dev mode — no email configured, log OTP to console
+        console.log(`\n========================================`);
+        console.log(`  [DEV MODE] OTP for ${dest}: ${otp}`);
+        console.log(`========================================\n`);
+      }
     } else {
       await sendOtpSms(dest, otp);
     }

@@ -11,6 +11,7 @@ import { CartContextProvider } from "./components/store/CartContext";
 import { UserProgressContextProvider } from "./components/store/UserProgressContext";
 import { AuthContextProvider } from "./components/store/AuthContext";
 import { FavoritesContextProvider } from "./components/store/FavoritesContext";
+import { SearchContextProvider } from "./components/store/SearchContext";
 import AuthContext from "./components/store/AuthContext";
 
 function AppContent() {
@@ -40,7 +41,9 @@ function App() {
       <UserProgressContextProvider>
         <CartContextProvider>
           <FavoritesContextProvider>
-            <AppContent />
+            <SearchContextProvider>
+              <AppContent />
+            </SearchContextProvider>
           </FavoritesContextProvider>
         </CartContextProvider>
       </UserProgressContextProvider>

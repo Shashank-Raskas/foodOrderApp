@@ -1,10 +1,10 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useContext } from "react";
 import MealItem from "./MealItem";
 import FilterSidebar from "./FilterSidebar";
-import FloatingSearch from "./FloatingSearch";
 import useHttp from "../hooks/useHttp";
 import Error from "./Error";
 import { API_ENDPOINTS } from "../config/api";
+import SearchContext from "./store/SearchContext";
 
 const requestConfig = {};
 const MEALS_PER_PAGE = 12;
@@ -22,7 +22,7 @@ const DEFAULT_FILTERS = {
 };
 
 export default function Meals() {
-    const [searchTerm, setSearchTerm] = useState("");
+    const { searchTerm } = useContext(SearchContext);
     const [filters, setFilters] = useState(DEFAULT_FILTERS);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -239,11 +239,6 @@ export default function Meals() {
                     {renderPagination()}
                 </main>
             </div>
-
-            <FloatingSearch
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-            />
         </>
     );
 }

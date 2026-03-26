@@ -48,14 +48,17 @@ export async function storeOtp(destination, otp, type) {
 export async function checkRateLimit(destination) {
   const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000).toISOString();
 
-  // We count by checking recent OTPs created
-  const recentSnapshot = await db
+  // Single-field query to avoid composite index requirement, then filter in JS
+  const snapshot = await db
     .collection(OTP_COLLECTION)
     .where('destination', '==', destination.toLowerCase())
-    .where('createdAt', '>=', windowStart)
     .get();
 
-  return recentSnapshot.size < RATE_LIMIT_MAX_SENDS;
+  const recentCount = snapshot.docs.filter(
+    (doc) => doc.data().createdAt >= windowStart
+  ).length;
+
+  return recentCount < RATE_LIMIT_MAX_SENDS;
 }
 
 /**
@@ -63,18 +66,19 @@ export async function checkRateLimit(destination) {
  * Returns { valid: boolean, reason?: string }
  */
 export async function verifyOtp(destination, otp) {
+  // Single-field query to avoid composite index requirement, then filter in JS
   const snapshot = await db
     .collection(OTP_COLLECTION)
     .where('destination', '==', destination.toLowerCase())
-    .where('verified', '==', false)
-    .limit(1)
     .get();
 
-  if (snapshot.empty) {
+  const unverifiedDocs = snapshot.docs.filter((d) => d.data().verified === false);
+
+  if (unverifiedDocs.length === 0) {
     return { valid: false, reason: 'No OTP found. Please request a new one.' };
   }
 
-  const doc = snapshot.docs[0];
+  const doc = unverifiedDocs[0];
   const data = doc.data();
 
   // Check expiry
