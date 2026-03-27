@@ -1,0 +1,196 @@
+import { createContext, useState, useEffect } from "react";
+import { API_ENDPOINTS } from "../../config/api";
+
+const AuthContext = createContext({
+    user: null,
+    isLoggedIn: false,
+    login: () => {},
+    signup: () => {},
+    logout: () => {},
+    updateUser: () => {},
+    sendOtp: () => {},
+    verifyOtp: () => {},
+    isLoading: false,
+    error: null,
+});
+
+export function AuthContextProvider({ children }) {
+    const [user, setUser] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    // Check if user is already logged in (from localStorage)
+    useEffect(() => {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            try {
+                setUser(JSON.parse(storedUser));
+            } catch (err) {
+                console.error('Failed to parse stored user:', err);
+                localStorage.removeItem('user');
+            }
+        }
+    }, []);
+
+    async function login(email, password) {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(API_ENDPOINTS.LOGIN, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || 'Login failed');
+            }
+
+            const data = await response.json();
+            const userData = {
+                userId: data.userId,
+                email: data.email,
+                name: data.name,
+                createdAt: data.createdAt,
+            };
+            
+            setUser(userData);
+            localStorage.setItem('user', JSON.stringify(userData));
+            return userData;
+        } catch (err) {
+            setError(err.message || 'Login failed. Please try again.');
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    async function signup(email, password, name) {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(API_ENDPOINTS.SIGNUP, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password, name }),
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || 'Signup failed');
+            }
+
+            const data = await response.json();
+            const userData = {
+                userId: data.userId,
+                email: data.email,
+                name: data.name,
+                createdAt: data.createdAt,
+            };
+            
+            setUser(userData);
+            localStorage.setItem('user', JSON.stringify(userData));
+            return userData;
+        } catch (err) {
+            setError(err.message || 'Signup failed. Please try again.');
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    async function sendOtp(type, destination) {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(API_ENDPOINTS.OTP_SEND, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, destination }),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Failed to send OTP');
+            return data;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    async function verifyOtp(type, destination, otp, name) {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(API_ENDPOINTS.OTP_VERIFY, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, destination, otp, name }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                // If server says name is needed, propagate that flag
+                if (data.needsName) {
+                    const err = new Error(data.message);
+                    err.needsName = true;
+                    throw err;
+                }
+                throw new Error(data.message || 'Verification failed');
+            }
+            const userData = {
+                userId: data.userId,
+                email: data.email,
+                phone: data.phone,
+                name: data.name,
+                createdAt: data.createdAt,
+            };
+            setUser(userData);
+            localStorage.setItem('user', JSON.stringify(userData));
+            return userData;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    function logout() {
+        setUser(null);
+        setError(null);
+        localStorage.removeItem('user');
+    }
+
+    function updateUser(userData) {
+        const updatedUser = { ...user, ...userData };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+
+    const authCtx = {
+        user,
+        isLoggedIn: user !== null,
+        login,
+        signup,
+        logout,
+        updateUser,
+        sendOtp,
+        verifyOtp,
+        isLoading,
+        error,
+    };
+
+    return (
+        <AuthContext.Provider value={authCtx}>
+            {children}
+        </AuthContext.Provider>
+    );
+}
+
+export default AuthContext;
