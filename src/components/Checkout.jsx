@@ -31,6 +31,8 @@ export default function Checkout() {
         street: '',
         postalCode: '',
         city: '',
+        phone: '',
+        countryCode: '+91',
     });
     const [formErrors, setFormErrors] = useState({});
     const [saveAddress, setSaveAddress] = useState(true);
@@ -81,7 +83,7 @@ export default function Checkout() {
         cartCtx.clearCart();
         clearData();
         setFormErrors({});
-        setNewAddress({ label: 'Home', street: '', postalCode: '', city: '' });
+        setNewAddress({ label: 'Home', street: '', postalCode: '', city: '', phone: '', countryCode: '+91' });
     }
 
     function handleContactChange(e) {
@@ -134,7 +136,7 @@ export default function Checkout() {
                         address: {
                             ...newAddress,
                             name: contactInfo.name,
-                            phone: contactInfo.phone,
+                            phone: newAddress.phone ? `${newAddress.countryCode}${newAddress.phone}` : contactInfo.phone,
                             isDefault: addresses.length === 0,
                         },
                     }),
@@ -289,6 +291,7 @@ export default function Checkout() {
                                             <span className="address-label-tag">{addr.label || 'Address'}</span>
                                             <p className="address-text">{addr.street}</p>
                                             <p className="address-text">{addr.city}, {addr.postalCode}</p>
+                                            {addr.phone && <p className="address-text address-phone-text">📞 {addr.phone}</p>}
                                         </div>
                                         {addr.isDefault && <span className="default-badge">Default</span>}
                                     </label>
@@ -339,6 +342,33 @@ export default function Checkout() {
                                         className={formErrors.street ? 'input-error' : ''}
                                     />
                                     {formErrors.street && <span className="checkout-error">{formErrors.street}</span>}
+                                </div>
+                                <div className="checkout-field">
+                                    <label>Phone for this address <span className="optional-tag">(optional)</span></label>
+                                    <div className="addr-phone-row">
+                                        <select
+                                            value={newAddress.countryCode}
+                                            onChange={e => setNewAddress(prev => ({ ...prev, countryCode: e.target.value }))}
+                                            className="addr-country-select"
+                                        >
+                                            <option value="+91">🇮🇳 +91</option>
+                                            <option value="+1">🇺🇸 +1</option>
+                                            <option value="+44">🇬🇧 +44</option>
+                                            <option value="+61">🇦🇺 +61</option>
+                                            <option value="+81">🇯🇵 +81</option>
+                                            <option value="+49">🇩🇪 +49</option>
+                                            <option value="+86">🇨🇳 +86</option>
+                                            <option value="+971">🇦🇪 +971</option>
+                                            <option value="+65">🇸🇬 +65</option>
+                                            <option value="+33">🇫🇷 +33</option>
+                                        </select>
+                                        <input
+                                            type="tel"
+                                            value={newAddress.phone}
+                                            onChange={e => setNewAddress(prev => ({ ...prev, phone: e.target.value.replace(/[^0-9]/g, '') }))}
+                                            placeholder="9876543210"
+                                        />
+                                    </div>
                                 </div>
                                 <div className="checkout-field-row">
                                     <div className="checkout-field">
