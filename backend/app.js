@@ -15,7 +15,11 @@ dotenv.config({ path: `.env.${process.env.NODE_ENV || 'development'}` });
 const app = express();
 
 app.use(bodyParser.json());
-app.use(express.static('public'));
+app.use(express.static('public', {
+  maxAge: '7d',
+  etag: true,
+  lastModified: true,
+}));
 
 // Ultra-permissive CORS for development and cloud deployment
 // In production with real security, you'd be more restrictive
