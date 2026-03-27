@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import MealItem from "./MealItem";
 import FilterSidebar from "./FilterSidebar";
 import useHttp from "../hooks/useHttp";
+import useDebounce from "../hooks/useDebounce";
 import Error from "./Error";
 import { API_ENDPOINTS } from "../config/api";
 import SearchContext from "./store/SearchContext";
@@ -24,6 +25,8 @@ const DEFAULT_FILTERS = {
 
 export default function Meals() {
     const { searchTerm } = useContext(SearchContext);
+    // Debounce search: input stays responsive, filtering waits 300ms after typing stops
+    const debouncedSearch = useDebounce(searchTerm, 300);
     const navigate = useNavigate();
     const [filters, setFilters] = useState(DEFAULT_FILTERS);
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -43,16 +46,16 @@ export default function Meals() {
         setFilters(DEFAULT_FILTERS);
     }, []);
 
-    // Reset to page 1 when filters or search change
+    // Reset to page 1 when filters or debounced search change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, filters]);
+    }, [debouncedSearch, filters]);
 
     const filteredMeals = useMemo(() => {
         let result = loadedMeals.filter((meal) => {
-            // Search
-            if (searchTerm) {
-                const term = searchTerm.toLowerCase();
+            // Search (uses debounced term to avoid re-filtering on every keystroke)
+            if (debouncedSearch) {
+                const term = debouncedSearch.toLowerCase();
                 const matchesSearch =
                     meal.name.toLowerCase().includes(term) ||
                     meal.description.toLowerCase().includes(term);

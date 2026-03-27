@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import useDebounce from "../hooks/useDebounce";
 
 const FILTER_SECTIONS = [
   {
@@ -90,6 +91,26 @@ const FILTER_SECTIONS = [
 
 export default function FilterSidebar({ filters, onFilterChange, onClearAll, isOpen, onToggle }) {
   const [collapsed, setCollapsed] = useState({});
+
+  // ── Price range debounce: local state for instant UI feedback,
+  //    debounced value propagates to parent after 200ms of no drag
+  const [localPrice, setLocalPrice] = useState(filters.priceRange);
+  const debouncedPrice = useDebounce(localPrice, 200);
+  const priceInitialized = useRef(false);
+
+  // Sync when parent resets (e.g. "Clear All")
+  useEffect(() => {
+    setLocalPrice(filters.priceRange);
+  }, [filters.priceRange]);
+
+  // Propagate debounced value to parent (skip first render)
+  useEffect(() => {
+    if (!priceInitialized.current) {
+      priceInitialized.current = true;
+      return;
+    }
+    onFilterChange("priceRange", debouncedPrice);
+  }, [debouncedPrice]);  // eslint-disable-line
 
   function toggleSection(key) {
     setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -213,7 +234,7 @@ export default function FilterSidebar({ filters, onFilterChange, onClearAll, isO
                     <div className="price-range-filter">
                       <div className="range-header">
                         <span>₹0</span>
-                        <span className="range-value">₹{filters.priceRange}</span>
+                        <span className="range-value">₹{localPrice}</span>
                         <span>₹3500</span>
                       </div>
                       <input
@@ -221,10 +242,8 @@ export default function FilterSidebar({ filters, onFilterChange, onClearAll, isO
                         min="0"
                         max="3500"
                         step="50"
-                        value={filters.priceRange}
-                        onChange={(e) =>
-                          onFilterChange("priceRange", Number(e.target.value))
-                        }
+                        value={localPrice}
+                        onChange={(e) => setLocalPrice(Number(e.target.value))}
                         className="sidebar-price-slider"
                       />
                     </div>
