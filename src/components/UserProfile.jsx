@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import Modal from "./UI/Modal";
 import Button from "./UI/Button";
 import Input from "./UI/Input";
@@ -12,6 +12,11 @@ export default function UserProfile() {
     const userProgressCtx = useContext(UserProgressContext);
     const [editMode, setEditMode] = useState(false);
     const [changePasswordMode, setChangePasswordMode] = useState(false);
+    const [addressMode, setAddressMode] = useState(false);
+    const [addAddressMode, setAddAddressMode] = useState(false);
+    const [addresses, setAddresses] = useState([]);
+    const [addressLoading, setAddressLoading] = useState(false);
+    const [newAddr, setNewAddr] = useState({ label: 'Home', street: '', postalCode: '', city: '' });
     const [formData, setFormData] = useState({
         name: authCtx.user?.name || '',
         currentPassword: '',
@@ -22,6 +27,27 @@ export default function UserProfile() {
     const [successMessage, setSuccessMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
+    // Fetch addresses when profile opens
+    useEffect(() => {
+        if (userProgressCtx.progress === 'profile' && authCtx.user) {
+            fetchAddresses();
+        }
+    }, [userProgressCtx.progress]);
+
+    async function fetchAddresses() {
+        if (!authCtx.user) return;
+        setAddressLoading(true);
+        try {
+            const res = await fetch(`${API_ENDPOINTS.USER_ADDRESSES}?userId=${authCtx.user.userId}`);
+            const data = await res.json();
+            setAddresses(data.addresses || []);
+        } catch (err) {
+            console.error('Failed to fetch addresses:', err);
+        } finally {
+            setAddressLoading(false);
+        }
+    }
+
     if (!authCtx.isLoggedIn) {
         return null;
     }
@@ -30,8 +56,76 @@ export default function UserProfile() {
         userProgressCtx.hideProfile?.();
         setEditMode(false);
         setChangePasswordMode(false);
+        setAddressMode(false);
+        setAddAddressMode(false);
         setFormErrors({});
         setSuccessMessage('');
+    }
+
+    // ---- Address management handlers ----
+    async function handleAddAddress(e) {
+        e.preventDefault();
+        const errors = {};
+        if (!newAddr.street.trim()) errors.street = 'Street is required';
+        if (!newAddr.postalCode.trim()) errors.postalCode = 'Postal code is required';
+        if (!newAddr.city.trim()) errors.city = 'City is required';
+        if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
+
+        setIsLoading(true);
+        try {
+            const res = await fetch(API_ENDPOINTS.USER_ADDRESSES, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: authCtx.user.userId,
+                    address: {
+                        ...newAddr,
+                        name: authCtx.user.name,
+                        phone: authCtx.user.phone || '',
+                        isDefault: addresses.length === 0,
+                    },
+                }),
+            });
+            const data = await res.json();
+            if (data.address) {
+                setAddresses(prev => [data.address, ...prev]);
+                setNewAddr({ label: 'Home', street: '', postalCode: '', city: '' });
+                setAddAddressMode(false);
+                setSuccessMessage('Address added!');
+                setTimeout(() => setSuccessMessage(''), 3000);
+            }
+        } catch (err) {
+            setFormErrors({ submit: 'Failed to save address' });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    async function handleDeleteAddress(id) {
+        try {
+            await fetch(`${API_ENDPOINTS.USER_ADDRESSES}/${id}`, { method: 'DELETE' });
+            setAddresses(prev => prev.filter(a => a.id !== id));
+        } catch (err) {
+            console.error('Failed to delete address:', err);
+        }
+    }
+
+    async function handleSetDefault(id) {
+        try {
+            const addr = addresses.find(a => a.id === id);
+            if (!addr) return;
+            await fetch(API_ENDPOINTS.USER_ADDRESSES, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: authCtx.user.userId,
+                    address: { ...addr, id: addr.id, isDefault: true },
+                }),
+            });
+            setAddresses(prev => prev.map(a => ({ ...a, isDefault: a.id === id })));
+        } catch (err) {
+            console.error('Failed to set default:', err);
+        }
     }
 
     function handleInputChange(e) {
@@ -183,7 +277,7 @@ export default function UserProfile() {
                 )}
 
                 {/* Profile Display View */}
-                {!editMode && !changePasswordMode && (
+                {!editMode && !changePasswordMode && !addressMode && (
                     <div className="profile-display">
                         <div className="profile-section">
                             <h3>Account Information</h3>
@@ -195,13 +289,152 @@ export default function UserProfile() {
                                 <span className="info-label">Email:</span>
                                 <span className="info-value">{authCtx.user?.email}</span>
                             </div>
+                            {authCtx.user?.phone && (
+                                <div className="info-item">
+                                    <span className="info-label">Phone:</span>
+                                    <span className="info-value">{authCtx.user.phone}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Quick address preview */}
+                        <div className="profile-section">
+                            <h3>Saved Addresses <span className="address-count-badge">{addresses.length}</span></h3>
+                            {addresses.length === 0 && (
+                                <p className="no-addresses-hint">No saved addresses yet. Add one for faster checkout!</p>
+                            )}
+                            {addresses.slice(0, 2).map(addr => (
+                                <div key={addr.id} className="address-preview">
+                                    <span className="address-preview-label">{addr.label || 'Address'}</span>
+                                    <span className="address-preview-text">{addr.street}, {addr.city}</span>
+                                    {addr.isDefault && <span className="address-preview-default">Default</span>}
+                                </div>
+                            ))}
+                            {addresses.length > 2 && (
+                                <p className="more-addresses-hint">+{addresses.length - 2} more</p>
+                            )}
                         </div>
 
                         <div className="profile-actions">
                             <Button onClick={() => setEditMode(true)}>Edit Profile</Button>
+                            <Button onClick={() => { setAddressMode(true); setFormErrors({}); }}>
+                                Manage Addresses
+                            </Button>
                             <Button onClick={() => setChangePasswordMode(true)} textOnly>
                                 Change Password
                             </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Address Management View */}
+                {addressMode && !editMode && !changePasswordMode && (
+                    <div className="profile-display">
+                        <div className="profile-section">
+                            <div className="addr-section-header">
+                                <h3>📍 Saved Addresses</h3>
+                                <button 
+                                    className="addr-back-btn"
+                                    onClick={() => { setAddressMode(false); setAddAddressMode(false); setFormErrors({}); }}
+                                >
+                                    ← Back
+                                </button>
+                            </div>
+
+                            {addressLoading && <p className="addr-loading">Loading addresses...</p>}
+
+                            {!addressLoading && addresses.length === 0 && !addAddressMode && (
+                                <div className="addr-empty">
+                                    <p>📭 No saved addresses</p>
+                                    <p className="addr-empty-hint">Add an address so you don't have to enter it every time!</p>
+                                </div>
+                            )}
+
+                            {!addAddressMode && addresses.map(addr => (
+                                <div key={addr.id} className={`addr-card${addr.isDefault ? ' addr-default' : ''}`}>
+                                    <div className="addr-card-top">
+                                        <span className="addr-label">{addr.label || 'Address'}</span>
+                                        {addr.isDefault && <span className="addr-default-tag">✓ Default</span>}
+                                    </div>
+                                    <p className="addr-street">{addr.street}</p>
+                                    <p className="addr-city">{addr.city}, {addr.postalCode}</p>
+                                    <div className="addr-card-actions">
+                                        {!addr.isDefault && (
+                                            <button className="addr-set-default" onClick={() => handleSetDefault(addr.id)}>
+                                                Set as Default
+                                            </button>
+                                        )}
+                                        <button className="addr-delete" onClick={() => handleDeleteAddress(addr.id)}>
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+
+                            {!addAddressMode && (
+                                <button className="addr-add-btn" onClick={() => { setAddAddressMode(true); setFormErrors({}); }}>
+                                    + Add New Address
+                                </button>
+                            )}
+
+                            {addAddressMode && (
+                                <form onSubmit={handleAddAddress} className="addr-form">
+                                    <h4>Add New Address</h4>
+                                    {formErrors.submit && <p className="error-message">{formErrors.submit}</p>}
+                                    <div className="addr-label-options">
+                                        {['Home', 'Work', 'Other'].map(lbl => (
+                                            <button
+                                                key={lbl}
+                                                type="button"
+                                                className={`addr-label-btn${newAddr.label === lbl ? ' active' : ''}`}
+                                                onClick={() => setNewAddr(prev => ({ ...prev, label: lbl }))}
+                                            >
+                                                {lbl === 'Home' ? '🏠' : lbl === 'Work' ? '🏢' : '📍'} {lbl}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="addr-field">
+                                        <label>Street Address</label>
+                                        <input
+                                            value={newAddr.street}
+                                            onChange={e => { setNewAddr(prev => ({ ...prev, street: e.target.value })); setFormErrors(prev => ({ ...prev, street: '' })); }}
+                                            placeholder="123 Main St, Apt 4"
+                                            className={formErrors.street ? 'input-error' : ''}
+                                        />
+                                        {formErrors.street && <span className="addr-error">{formErrors.street}</span>}
+                                    </div>
+                                    <div className="addr-field-row">
+                                        <div className="addr-field">
+                                            <label>Postal Code</label>
+                                            <input
+                                                value={newAddr.postalCode}
+                                                onChange={e => { setNewAddr(prev => ({ ...prev, postalCode: e.target.value })); setFormErrors(prev => ({ ...prev, postalCode: '' })); }}
+                                                placeholder="110001"
+                                                className={formErrors.postalCode ? 'input-error' : ''}
+                                            />
+                                            {formErrors.postalCode && <span className="addr-error">{formErrors.postalCode}</span>}
+                                        </div>
+                                        <div className="addr-field">
+                                            <label>City</label>
+                                            <input
+                                                value={newAddr.city}
+                                                onChange={e => { setNewAddr(prev => ({ ...prev, city: e.target.value })); setFormErrors(prev => ({ ...prev, city: '' })); }}
+                                                placeholder="New Delhi"
+                                                className={formErrors.city ? 'input-error' : ''}
+                                            />
+                                            {formErrors.city && <span className="addr-error">{formErrors.city}</span>}
+                                        </div>
+                                    </div>
+                                    <div className="addr-form-actions">
+                                        <Button type="submit" disabled={isLoading}>
+                                            {isLoading ? 'Saving...' : 'Save Address'}
+                                        </Button>
+                                        <Button type="button" textOnly onClick={() => { setAddAddressMode(false); setFormErrors({}); }}>
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                </form>
+                            )}
                         </div>
                     </div>
                 )}
