@@ -45,8 +45,20 @@ export default function Header() {
     }
 
     // search is always visible in header; input ref available for programmatic focus
+    // Keyboard shortcut: Ctrl+K or Cmd+K to focus search
     useEffect(() => {
-        // placeholder for any header search lifecycle logic
+        function handleKeyDown(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+            }
+            // Escape to blur search
+            if (e.key === 'Escape' && document.activeElement === searchInputRef.current) {
+                searchInputRef.current.blur();
+            }
+        }
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
     }, []);
 
     return (
@@ -65,7 +77,7 @@ export default function Header() {
                     <input
                         ref={searchInputRef}
                         type="text"
-                        placeholder="Search meals..."
+                        placeholder="Search meals... (Ctrl+K)"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="header-search-input"
