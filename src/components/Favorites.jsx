@@ -2,16 +2,22 @@ import { useContext } from "react";
 import Modal from "./UI/Modal";
 import FavoritesContext from "./store/FavoritesContext";
 import UserProgressContext from "./store/UserProgressContext";
-import MealItem from "./MealItem";
+import CartContext from "./store/CartContext";
 import { currencyFormatter } from "../util/formatting";
+import { API_URL } from "../config/api";
 import './Favorites.css';
 
 export default function Favorites() {
     const favCtx = useContext(FavoritesContext);
     const userProgressCtx = useContext(UserProgressContext);
+    const cartCtx = useContext(CartContext);
 
     function handleClose() {
         userProgressCtx.hideFavorites?.();
+    }
+
+    function handleAddToCart(meal) {
+        cartCtx.addItem(meal);
     }
 
     return (
@@ -32,19 +38,32 @@ export default function Favorites() {
                     <div className="favorites-list">
                         {favCtx.favorites.map(meal => (
                             <div key={meal.id} className="favorite-item">
-                                <img src={meal.image} alt={meal.name} className="fav-image" />
+                                <img 
+                                    src={meal.image?.startsWith('http') ? meal.image : `${API_URL}/${meal.image}`} 
+                                    alt={meal.name} 
+                                    className="fav-image" 
+                                />
                                 <div className="fav-info">
                                     <h3>{meal.name}</h3>
                                     <p className="fav-description">{meal.description}</p>
-                                    <p className="fav-price">₹{typeof meal.price === 'string' ? parseFloat(meal.price).toFixed(2) : meal.price.toFixed(2)}</p>
+                                    <p className="fav-price">{currencyFormatter.format(meal.price)}</p>
                                 </div>
-                                <button 
-                                    className="remove-fav-btn"
-                                    onClick={() => favCtx.removeFavorite(meal.id)}
-                                    title="Remove from favorites"
-                                >
-                                    ❤️
-                                </button>
+                                <div className="fav-actions">
+                                    <button 
+                                        className="fav-add-cart-btn"
+                                        onClick={() => handleAddToCart(meal)}
+                                        title="Add to cart"
+                                    >
+                                        🛒
+                                    </button>
+                                    <button 
+                                        className="remove-fav-btn"
+                                        onClick={() => favCtx.removeFavorite(meal.id)}
+                                        title="Remove from favorites"
+                                    >
+                                        ❤️
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>
