@@ -25,6 +25,7 @@ export default function Checkout() {
         name: '',
         email: '',
         phone: '',
+        countryCode: '+91',
     });
     const [newAddress, setNewAddress] = useState({
         label: 'Home',
@@ -45,10 +46,20 @@ export default function Checkout() {
     // Load user data and addresses when modal opens
     useEffect(() => {
         if (userProgressCtx.progress === 'checkout' && authCtx.user) {
+            // Extract country code from stored phone if present
+            const storedPhone = authCtx.user.phone || '';
+            let phoneCode = '+91';
+            let phoneNum = storedPhone;
+            const codeMatch = storedPhone.match(/^(\+\d{1,4})/);
+            if (codeMatch) {
+                phoneCode = codeMatch[1];
+                phoneNum = storedPhone.slice(codeMatch[1].length);
+            }
             setContactInfo({
                 name: authCtx.user.name || '',
                 email: authCtx.user.email || '',
-                phone: authCtx.user.phone || '',
+                phone: phoneNum,
+                countryCode: phoneCode,
             });
             fetchAddresses();
         }
@@ -150,15 +161,16 @@ export default function Checkout() {
             }
         }
 
-        // Update phone on user if changed
-        if (authCtx.user && contactInfo.phone !== (authCtx.user.phone || '')) {
+        // Update phone on user if changed (store with country code)
+        const fullPhone = contactInfo.phone ? `${contactInfo.countryCode}${contactInfo.phone}` : '';
+        if (authCtx.user && fullPhone !== (authCtx.user.phone || '')) {
             try {
                 await fetch(API_ENDPOINTS.USER_CONTACT, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: authCtx.user.userId, phone: contactInfo.phone }),
+                    body: JSON.stringify({ userId: authCtx.user.userId, phone: fullPhone }),
                 });
-                authCtx.updateUser({ phone: contactInfo.phone });
+                authCtx.updateUser({ phone: fullPhone });
             } catch (err) { /* silent */ }
         }
 
@@ -168,7 +180,7 @@ export default function Checkout() {
                 customer: {
                     name: contactInfo.name,
                     email: contactInfo.email,
-                    phone: contactInfo.phone,
+                    phone: contactInfo.phone ? `${contactInfo.countryCode}${contactInfo.phone}` : '',
                     street: orderAddress.street,
                     'postal-code': orderAddress.postalCode || orderAddress['postal-code'],
                     city: orderAddress.city,
@@ -257,13 +269,30 @@ export default function Checkout() {
                             </div>
                             <div className="checkout-field">
                                 <label>Phone <span className="optional-tag">(optional)</span></label>
-                                <input
-                                    name="phone"
-                                    type="tel"
-                                    value={contactInfo.phone}
-                                    onChange={handleContactChange}
-                                    placeholder="+91 98765 43210"
-                                />
+                                <div className="addr-phone-row">
+                                    <select
+                                        value={contactInfo.countryCode}
+                                        onChange={e => setContactInfo(prev => ({ ...prev, countryCode: e.target.value }))}
+                                        className="addr-country-select"
+                                    >
+                                        <option value="+91">🇮🇳 +91</option>
+                                        <option value="+1">🇺🇸 +1</option>
+                                        <option value="+44">🇬🇧 +44</option>
+                                        <option value="+61">🇦🇺 +61</option>
+                                        <option value="+81">🇯🇵 +81</option>
+                                        <option value="+49">🇩🇪 +49</option>
+                                        <option value="+86">🇨🇳 +86</option>
+                                        <option value="+971">🇦🇪 +971</option>
+                                        <option value="+65">🇸🇬 +65</option>
+                                        <option value="+33">🇫🇷 +33</option>
+                                    </select>
+                                    <input
+                                        type="tel"
+                                        value={contactInfo.phone}
+                                        onChange={e => setContactInfo(prev => ({ ...prev, phone: e.target.value.replace(/[^0-9]/g, '') }))}
+                                        placeholder="9876543210"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
