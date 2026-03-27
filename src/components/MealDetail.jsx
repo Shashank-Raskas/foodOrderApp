@@ -1,11 +1,12 @@
-import { useContext, useMemo, useState } from "react";
-import Modal from "./UI/Modal";
+import { useContext, useMemo, useState, useEffect } from "react";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
+import PageLayout from "./UI/PageLayout";
 import { currencyFormatter } from "../util/formatting";
 import CartContext from "./store/CartContext";
 import FavoritesContext from "./store/FavoritesContext";
 import AuthContext from "./store/AuthContext";
 import UserProgressContext from "./store/UserProgressContext";
-import { API_URL } from "../config/api";
+import { API_URL, API_ENDPOINTS } from "../config/api";
 import './MealDetail.css';
 
 // Estimated calorie ranges by category (per serving)
@@ -58,12 +59,37 @@ const TIME_LABELS = {
     'late-night': '🌃 Late Night',
 };
 
-export default function MealDetail({ meal, open, onClose }) {
+export default function MealDetail() {
+    const { mealId } = useParams();
+    const location = useLocation();
+    const navigate = useNavigate();
     const cartCtx = useContext(CartContext);
     const favCtx = useContext(FavoritesContext);
     const authCtx = useContext(AuthContext);
     const userProgressCtx = useContext(UserProgressContext);
     const [imgLoaded, setImgLoaded] = useState(false);
+    const [meal, setMeal] = useState(location.state?.meal || null);
+    const [loading, setLoading] = useState(!meal);
+    const [error, setError] = useState(null);
+
+    // If no meal in route state, fetch all meals and find by ID
+    useEffect(() => {
+        if (!meal && mealId) {
+            setLoading(true);
+            fetch(API_ENDPOINTS.MEALS)
+                .then(res => res.json())
+                .then(meals => {
+                    const found = meals.find(m => m.id === mealId);
+                    if (found) {
+                        setMeal(found);
+                    } else {
+                        setError('Meal not found');
+                    }
+                })
+                .catch(() => setError('Failed to load meal details'))
+                .finally(() => setLoading(false));
+        }
+    }, [mealId, meal]);
 
     const itemInCart = useMemo(() =>
         authCtx.isLoggedIn && meal ? cartCtx.items.find(item => item.id === meal.id) : null,
@@ -75,10 +101,28 @@ export default function MealDetail({ meal, open, onClose }) {
         [favCtx?.favorites, meal?.id, authCtx.isLoggedIn]
     );
 
-    if (!meal) return null;
+    if (loading) {
+        return (
+            <PageLayout className="meal-detail-page">
+                <div className="meal-detail-loading">
+                    <p>Loading meal details...</p>
+                </div>
+            </PageLayout>
+        );
+    }
+
+    if (error || !meal) {
+        return (
+            <PageLayout className="meal-detail-page">
+                <div className="meal-detail-error">
+                    <p>😕 {error || 'Meal not found'}</p>
+                    <button onClick={() => navigate('/')}>Back to Menu</button>
+                </div>
+            </PageLayout>
+        );
+    }
 
     const calorieRange = CALORIE_ESTIMATES[meal.category] || CALORIE_ESTIMATES['default'];
-    // Use price as a rough proxy for portion size to estimate within range
     const price = Number(meal.price);
     const calorieEstimate = Math.round(
         calorieRange.min + ((price / 1000) * (calorieRange.max - calorieRange.min))
@@ -116,11 +160,8 @@ export default function MealDetail({ meal, open, onClose }) {
     }
 
     return (
-        <Modal open={open} onClose={onClose} className="meal-detail-modal">
-            <div className="meal-detail">
-                {/* Close button */}
-                <button className="meal-detail-close" onClick={onClose} title="Close">✕</button>
-
+        <PageLayout className="meal-detail-page">
+            <div className="meal-detail page-view">
                 {/* Hero image */}
                 <div className="meal-detail-hero">
                     <img
@@ -227,6 +268,6 @@ export default function MealDetail({ meal, open, onClose }) {
                     </div>
                 </div>
             </div>
-        </Modal>
+        </PageLayout>
     );
 }

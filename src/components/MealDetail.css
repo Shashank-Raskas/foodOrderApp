@@ -1,15 +1,5 @@
-/* ==================== MEAL DETAIL MODAL ==================== */
-.meal-detail-modal {
-    max-width: 520px !important;
-    width: 92% !important;
-    padding: 0 !important;
-    border-radius: 16px !important;
-    overflow: hidden;
-}
-
+/* ==================== MEAL DETAIL ==================== */
 .meal-detail {
-    max-height: 85vh;
-    overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: #d4a574 transparent;
     position: relative;
