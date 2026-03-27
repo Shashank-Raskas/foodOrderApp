@@ -1,33 +1,36 @@
 import { useContext } from "react";
-import Modal from "./UI/Modal";
+import PageLayout from "./UI/PageLayout";
 import FavoritesContext from "./store/FavoritesContext";
-import UserProgressContext from "./store/UserProgressContext";
 import CartContext from "./store/CartContext";
+import AuthContext from "./store/AuthContext";
+import UserProgressContext from "./store/UserProgressContext";
+import { useNavigate } from "react-router-dom";
 import { currencyFormatter } from "../util/formatting";
 import { API_URL } from "../config/api";
 import './Favorites.css';
 
 export default function Favorites() {
     const favCtx = useContext(FavoritesContext);
-    const userProgressCtx = useContext(UserProgressContext);
     const cartCtx = useContext(CartContext);
-
-    function handleClose() {
-        userProgressCtx.hideFavorites?.();
-    }
+    const authCtx = useContext(AuthContext);
+    const userProgressCtx = useContext(UserProgressContext);
+    const navigate = useNavigate();
 
     function handleAddToCart(meal) {
+        if (!authCtx.isLoggedIn) {
+            userProgressCtx.showAuth('login');
+            return;
+        }
         cartCtx.addItem(meal);
     }
 
-    return (
-        <Modal open={userProgressCtx.progress === 'favorites'} onClose={handleClose}>
-            <div className="favorites-container">
-                <div className="favorites-header">
-                    <h2>❤️ My Favorites</h2>
-                    <button className="close-btn" onClick={handleClose}>✕</button>
-                </div>
+    function handleViewDetail(meal) {
+        navigate(`/meal/${meal.id}`, { state: { meal } });
+    }
 
+    return (
+        <PageLayout title="❤️ My Favorites" className="favorites-page">
+            <div className="favorites-container page-view">
                 {favCtx.favorites.length === 0 ? (
                     <div className="empty-favorites">
                         <p className="empty-icon">💔</p>
@@ -42,8 +45,10 @@ export default function Favorites() {
                                     src={meal.image?.startsWith('http') ? meal.image : `${API_URL}/${meal.image}`} 
                                     alt={meal.name} 
                                     className="fav-image" 
+                                    onClick={() => handleViewDetail(meal)}
+                                    style={{ cursor: 'pointer' }}
                                 />
-                                <div className="fav-info">
+                                <div className="fav-info" onClick={() => handleViewDetail(meal)} style={{ cursor: 'pointer' }}>
                                     <h3>{meal.name}</h3>
                                     <p className="fav-description">{meal.description}</p>
                                     <p className="fav-price">{currencyFormatter.format(meal.price)}</p>
@@ -69,6 +74,6 @@ export default function Favorites() {
                     </div>
                 )}
             </div>
-        </Modal>
+        </PageLayout>
     );
 }

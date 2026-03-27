@@ -1,12 +1,4 @@
 /* ==================== USER PROFILE CONTAINER ==================== */
-.profile-modal {
-    max-width: 500px !important;
-    width: 92% !important;
-    padding: 0 !important;
-    border-radius: 16px !important;
-    overflow: hidden;
-}
-
 .user-profile-container {
     padding: 30px;
     max-width: 100%;

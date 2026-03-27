@@ -1,15 +1,13 @@
 import { useContext, useState, useEffect } from "react";
-import Modal from "./UI/Modal";
+import PageLayout from "./UI/PageLayout";
 import Button from "./UI/Button";
 import Input from "./UI/Input";
 import AuthContext from "./store/AuthContext";
-import UserProgressContext from "./store/UserProgressContext";
 import { API_ENDPOINTS } from "../config/api";
 import './UserProfile.css';
 
 export default function UserProfile() {
     const authCtx = useContext(AuthContext);
-    const userProgressCtx = useContext(UserProgressContext);
     const [editMode, setEditMode] = useState(false);
     const [changePasswordMode, setChangePasswordMode] = useState(false);
     const [addressMode, setAddressMode] = useState(false);
@@ -27,12 +25,12 @@ export default function UserProfile() {
     const [successMessage, setSuccessMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Fetch addresses when profile opens
+    // Fetch addresses when profile page loads
     useEffect(() => {
-        if (userProgressCtx.progress === 'profile' && authCtx.user) {
+        if (authCtx.user) {
             fetchAddresses();
         }
-    }, [userProgressCtx.progress]);
+    }, [authCtx.user]);
 
     async function fetchAddresses() {
         if (!authCtx.user) return;
@@ -50,16 +48,6 @@ export default function UserProfile() {
 
     if (!authCtx.isLoggedIn) {
         return null;
-    }
-
-    function handleClose() {
-        userProgressCtx.hideProfile?.();
-        setEditMode(false);
-        setChangePasswordMode(false);
-        setAddressMode(false);
-        setAddAddressMode(false);
-        setFormErrors({});
-        setSuccessMessage('');
     }
 
     // ---- Address management handlers ----
@@ -254,13 +242,8 @@ export default function UserProfile() {
     }) : 'Unknown';
 
     return (
-        <Modal open={userProgressCtx.progress === 'profile'} onClose={handleClose} className="profile-modal">
-            <div className="user-profile-container">
-                {/* Close Button - Top Right */}
-                <button className="profile-close-btn" onClick={handleClose} title="Close">
-                    ✕
-                </button>
-
+        <PageLayout title="My Profile" className="profile-page">
+            <div className="user-profile-container page-view">
                 {/* Profile Header */}
                 <div className="profile-header">
                     <div className="user-avatar">{userInitial}</div>
@@ -568,6 +551,6 @@ export default function UserProfile() {
                 )}
 
             </div>
-        </Modal>
+        </PageLayout>
     );
 }
