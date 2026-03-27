@@ -950,6 +950,23 @@ h1 {
   width: 100%;
   height: 20rem;
   object-fit: cover;
+  transition: opacity 0.3s ease;
+}
+
+.meal-item img.loading-shimmer {
+  background: linear-gradient(90deg, #2a2520 25%, #3a332a 50%, #2a2520 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  opacity: 0.7;
+}
+
+.meal-item img.loaded {
+  opacity: 1;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .meal-item h3 {
@@ -1773,6 +1790,11 @@ h1 {
   color: #2c2306;
 }
 
+.address-phone-text {
+  font-size: 0.78rem !important;
+  color: #78716c !important;
+}
+
 .save-address-check {
   display: flex;
   align-items: center;
@@ -1988,6 +2010,8 @@ h1 {
 
 .modal::backdrop {
   background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+  animation: fade-in 0.2s ease;
 }
 
 .center {
@@ -2097,6 +2121,34 @@ h1 {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ==================== SCROLL TO TOP ==================== */
+.scroll-to-top {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 90;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffc404, #ffab04);
+  color: #2c2306;
+  border: none;
+  font-size: 1.3rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(255, 196, 4, 0.35);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fade-slide-up 0.3s ease-out;
+}
+
+.scroll-to-top:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 24px rgba(255, 196, 4, 0.5);
 }
 
 /* ==================== RESPONSIVE ==================== */
