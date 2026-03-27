@@ -1,4 +1,5 @@
 import { useContext, useState, useEffect } from "react";
+import { Routes, Route } from "react-router-dom";
 import Cart from "./components/Cart";
 import Checkout from "./components/Checkout";
 import Header from "./components/Header";
@@ -8,6 +9,8 @@ import UserProfile from "./components/UserProfile";
 import Favorites from "./components/Favorites";
 import OrderHistory from "./components/OrderHistory";
 import MealDetail from "./components/MealDetail";
+import ScrollToTop from "./components/UI/ScrollToTop";
+import ProtectedRoute from "./components/UI/ProtectedRoute";
 import { CartContextProvider } from "./components/store/CartContext";
 import { UserProgressContextProvider } from "./components/store/UserProgressContext";
 import { AuthContextProvider } from "./components/store/AuthContext";
@@ -42,25 +45,30 @@ function ScrollToTopButton() {
 
 function AppContent() {
   const authCtx = useContext(AuthContext);
-  const [selectedMeal, setSelectedMeal] = useState(null);
 
   return (
     <>
+      <ScrollToTop />
       <Header />
-      <Meals onViewMealDetail={(meal) => setSelectedMeal(meal)} />
+      <Routes>
+        <Route path="/" element={<Meals />} />
+        <Route path="/meal/:mealId" element={<MealDetail />} />
+        <Route path="/favorites" element={
+          <ProtectedRoute><Favorites /></ProtectedRoute>
+        } />
+        <Route path="/orders" element={
+          <ProtectedRoute><OrderHistory /></ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute><UserProfile /></ProtectedRoute>
+        } />
+      </Routes>
+      {/* Global modals — always available regardless of route */}
       <AuthModal />
-      <MealDetail
-        meal={selectedMeal}
-        open={!!selectedMeal}
-        onClose={() => setSelectedMeal(null)}
-      />
       {authCtx.isLoggedIn && (
         <>
           <Cart />
           <Checkout />
-          <UserProfile />
-          <Favorites />
-          <OrderHistory />
         </>
       )}
       <ScrollToTopButton />

@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import MealItem from "./MealItem";
 import FilterSidebar from "./FilterSidebar";
 import useHttp from "../hooks/useHttp";
@@ -21,8 +22,9 @@ const DEFAULT_FILTERS = {
     sortBy: "default",
 };
 
-export default function Meals({ onViewMealDetail }) {
+export default function Meals() {
     const { searchTerm } = useContext(SearchContext);
+    const navigate = useNavigate();
     const [filters, setFilters] = useState(DEFAULT_FILTERS);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -228,7 +230,7 @@ export default function Meals({ onViewMealDetail }) {
                     <ul id="meals">
                         {pagedMeals.length > 0 ? (
                             pagedMeals.map((meal) => (
-                                <MealItem key={meal.id} meal={meal} onViewDetail={onViewMealDetail} />
+                                <MealItem key={meal.id} meal={meal} onViewDetail={(m) => navigate(`/meal/${m.id}`, { state: { meal: m } })} />
                             ))
                         ) : (
                             <p className="center no-results">

@@ -1,4 +1,5 @@
 import { useContext, useState, useRef, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import logo from '../assets/logo.jpg';
 import Button from './UI/Button';
 import CartContext from './store/CartContext';
@@ -16,6 +17,8 @@ export default function Header() {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
     const searchInputRef = useRef(null);
+    const navigate = useNavigate();
+    const location = useLocation();
 
     const totalCartItems = cartCtx.items.reduce((total, item) => total + item.quantity, 0);
     const userInitial = authCtx.user?.name?.[0]?.toUpperCase() || '?';
@@ -63,7 +66,7 @@ export default function Header() {
 
     return (
         <header id="main-header">
-            <div id="title">
+            <div id="title" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
                 <img src={logo} alt="A restaurant" />
                 <h1>The Flavor Alchemist</h1>
             </div>
@@ -127,16 +130,16 @@ export default function Header() {
                                         </div>
                                     </div>
                                     <hr className="dropdown-divider" />
-                                    <button className="dropdown-item" onClick={() => handleMenuAction(userProgresCtx.showProfile)}>
+                                    <button className="dropdown-item" onClick={() => handleMenuAction(() => navigate('/profile'))}>
                                         <span>👤</span> My Profile
                                     </button>
-                                    <button className="dropdown-item" onClick={() => handleMenuAction(userProgresCtx.showFavorites)}>
+                                    <button className="dropdown-item" onClick={() => handleMenuAction(() => navigate('/favorites'))}>
                                         <span>❤️</span> Favorites
                                         {favCtx.favorites.length > 0 && (
                                             <span className="dropdown-badge">{favCtx.favorites.length}</span>
                                         )}
                                     </button>
-                                    <button className="dropdown-item" onClick={() => handleMenuAction(userProgresCtx.showOrderHistory)}>
+                                    <button className="dropdown-item" onClick={() => handleMenuAction(() => navigate('/orders'))}>
                                         <span>📦</span> My Orders
                                     </button>
                                     <hr className="dropdown-divider" />

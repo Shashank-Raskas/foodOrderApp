@@ -7,12 +7,6 @@ const UserProgressContext = createContext({
     hideCart: () => {},
     showCheckout: () => {},
     hideCheckout: () => {},
-    showProfile: () => {},
-    hideProfile: () => {},
-    showFavorites: () => {},
-    hideFavorites: () => {},
-    showOrderHistory: () => {},
-    hideOrderHistory: () => {},
     showAuth: () => {},
     hideAuth: () => {},
 });
@@ -35,30 +29,6 @@ function hideCheckout() {
     setUserProgress('');
 }
 
-function showProfile() {
-    setUserProgress('profile');
-}
-
-function hideProfile() {
-    setUserProgress('');
-}
-
-function showFavorites() {
-    setUserProgress('favorites');
-}
-
-function hideFavorites() {
-    setUserProgress('');
-}
-
-function showOrderHistory() {
-    setUserProgress('orderHistory');
-}
-
-function hideOrderHistory() {
-    setUserProgress('');
-}
-
 function showAuth(view = 'login') {
     setAuthView(view);
 }
@@ -74,12 +44,6 @@ const userProgressCtx= {
     hideCart,
     showCheckout,
     hideCheckout,
-    showProfile,
-    hideProfile,
-    showFavorites,
-    hideFavorites,
-    showOrderHistory,
-    hideOrderHistory,
     showAuth,
     hideAuth,
 };
