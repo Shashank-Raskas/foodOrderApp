@@ -21,7 +21,7 @@ const DEFAULT_FILTERS = {
     sortBy: "default",
 };
 
-export default function Meals() {
+export default function Meals({ onViewMealDetail }) {
     const { searchTerm } = useContext(SearchContext);
     const [filters, setFilters] = useState(DEFAULT_FILTERS);
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -228,7 +228,7 @@ export default function Meals() {
                     <ul id="meals">
                         {pagedMeals.length > 0 ? (
                             pagedMeals.map((meal) => (
-                                <MealItem key={meal.id} meal={meal} />
+                                <MealItem key={meal.id} meal={meal} onViewDetail={onViewMealDetail} />
                             ))
                         ) : (
                             <p className="center no-results">

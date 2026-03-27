@@ -1,4 +1,4 @@
-import { useContext, useMemo } from "react"
+import { useContext, useMemo, useState } from "react"
 import { currencyFormatter } from "../util/formatting"
 import CartContext from "./store/CartContext"
 import FavoritesContext from "./store/FavoritesContext"
@@ -6,12 +6,13 @@ import AuthContext from "./store/AuthContext"
 import UserProgressContext from "./store/UserProgressContext"
 import { API_URL } from "../config/api"
 
-export default function MealItem({meal}) {
+export default function MealItem({meal, onViewDetail}) {
 
     const cartCtx = useContext(CartContext);
     const favCtx = useContext(FavoritesContext);
     const authCtx = useContext(AuthContext);
     const userProgressCtx = useContext(UserProgressContext);
+    const [imgLoaded, setImgLoaded] = useState(false);
     
     // Check if item is in cart
     const itemInCart = useMemo(() => 
@@ -63,8 +64,13 @@ export default function MealItem({meal}) {
                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                 </svg>
             </button>
-            <img src={`${API_URL}/${meal.image}`} alt={meal.name}/>
-            <div className="meal-item-body">
+            <img src={`${API_URL}/${meal.image}`} alt={meal.name} loading="lazy" 
+                className={imgLoaded ? 'loaded' : 'loading-shimmer'}
+                onLoad={() => setImgLoaded(true)}
+                onClick={() => onViewDetail && onViewDetail(meal)}
+                style={{ cursor: onViewDetail ? 'pointer' : 'default' }}
+            />
+            <div className="meal-item-body" onClick={() => onViewDetail && onViewDetail(meal)} style={{ cursor: onViewDetail ? 'pointer' : 'default' }}>
                 <h3>{meal.name}</h3>
                 <p className="meal-item-price">{currencyFormatter.format(meal.price)}</p>
                 <p className="meal-item-description">{meal.description}</p>
