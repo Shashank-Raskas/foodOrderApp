@@ -4,15 +4,30 @@ export default function  Modal({children,open,className = '', onClose}) {
 
     const dialog = useRef();
     useEffect(() => {
-        const Modal = dialog.current;
+        const modal = dialog.current;
         if (open) {
-            dialog.current.showModal();
+            modal.showModal();
+            document.body.style.overflow = 'hidden';
         }
-        return () => Modal.close();
+        return () => {
+            modal.close();
+            // Only restore scroll if no other dialogs are open
+            const openDialogs = document.querySelectorAll('dialog[open]');
+            if (openDialogs.length <= 1) {
+                document.body.style.overflow = '';
+            }
+        };
     }, [open]);
 
+    // Close on backdrop click
+    function handleBackdropClick(e) {
+        if (e.target === dialog.current) {
+            onClose();
+        }
+    }
+
     return createPortal(
-    <dialog ref={dialog} className={`modal ${className}`} onClose={onClose}>
+    <dialog ref={dialog} className={`modal ${className}`} onClose={onClose} onClick={handleBackdropClick}>
         {children}
         </dialog>,
      document.getElementById('modal')
