@@ -48,6 +48,8 @@ export const API_ENDPOINTS = {
   AUTH_CONFIG: `${API_URL}/api/auth/config`,
   OTP_SEND: `${API_URL}/api/otp/send`,
   OTP_VERIFY: `${API_URL}/api/otp/verify`,
+  USER_ADDRESSES: `${API_URL}/api/user/addresses`,
+  USER_CONTACT: `${API_URL}/api/user/contact`,
 };
 
 // Export for debugging

@@ -518,6 +518,98 @@ app.get('/api/user/orders', async (req, res) => {
 });
 
 
+// ===================== User Addresses =====================
+
+// Get user addresses
+app.get('/api/user/addresses', async (req, res) => {
+  const { userId } = req.query;
+  if (!userId) return res.status(400).json({ message: 'User ID is required.' });
+
+  try {
+    const snapshot = await db.collection('addresses').where('userId', '==', userId).get();
+    const addresses = [];
+    snapshot.forEach(doc => addresses.push({ id: doc.id, ...doc.data() }));
+    addresses.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    res.json({ addresses });
+  } catch (err) {
+    console.error('[Addresses] Fetch error:', err);
+    res.status(500).json({ message: 'Failed to fetch addresses.' });
+  }
+});
+
+// Add or update address
+app.post('/api/user/addresses', async (req, res) => {
+  const { userId, address } = req.body;
+  if (!userId) return res.status(400).json({ message: 'User ID is required.' });
+  if (!address || !address.street || !address.city || !address.postalCode) {
+    return res.status(400).json({ message: 'Street, city, and postal code are required.' });
+  }
+
+  try {
+    const data = {
+      userId,
+      label: address.label || 'Home',
+      name: address.name || '',
+      phone: address.phone || '',
+      street: address.street.trim(),
+      city: address.city.trim(),
+      postalCode: address.postalCode.trim(),
+      isDefault: address.isDefault || false,
+      createdAt: new Date().toISOString(),
+    };
+
+    // If setting as default, unset other defaults
+    if (data.isDefault) {
+      const existing = await db.collection('addresses').where('userId', '==', userId).where('isDefault', '==', true).get();
+      const batch = db.batch();
+      existing.forEach(doc => batch.update(doc.ref, { isDefault: false }));
+      await batch.commit();
+    }
+
+    if (address.id) {
+      // Update existing
+      await db.collection('addresses').doc(address.id).update(data);
+      res.json({ message: 'Address updated!', address: { id: address.id, ...data } });
+    } else {
+      // Create new
+      const ref = await db.collection('addresses').add(data);
+      res.status(201).json({ message: 'Address saved!', address: { id: ref.id, ...data } });
+    }
+  } catch (err) {
+    console.error('[Addresses] Save error:', err);
+    res.status(500).json({ message: 'Failed to save address.' });
+  }
+});
+
+// Delete address
+app.delete('/api/user/addresses/:id', async (req, res) => {
+  try {
+    await db.collection('addresses').doc(req.params.id).delete();
+    res.json({ message: 'Address deleted!' });
+  } catch (err) {
+    console.error('[Addresses] Delete error:', err);
+    res.status(500).json({ message: 'Failed to delete address.' });
+  }
+});
+
+// Update user contact info (phone)
+app.put('/api/user/contact', async (req, res) => {
+  const { userId, phone } = req.body;
+  if (!userId) return res.status(400).json({ message: 'User ID is required.' });
+
+  try {
+    const userSnapshot = await db.collection('credentials').where('userId', '==', userId).limit(1).get();
+    if (userSnapshot.empty) return res.status(404).json({ message: 'User not found.' });
+    await userSnapshot.docs[0].ref.update({ phone: phone || '', updatedAt: new Date().toISOString() });
+    res.json({ message: 'Contact updated!' });
+  } catch (err) {
+    console.error('[Contact] Update error:', err);
+    res.status(500).json({ message: 'Failed to update contact.' });
+  }
+});
+
+// ===================== End User Addresses =====================
+
 app.use((req, res) => {
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
