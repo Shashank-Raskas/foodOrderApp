@@ -1,7 +1,16 @@
 /* ==================== USER PROFILE CONTAINER ==================== */
+.profile-modal {
+    max-width: 500px !important;
+    width: 92% !important;
+    padding: 0 !important;
+    border-radius: 16px !important;
+    overflow: hidden;
+}
+
 .user-profile-container {
     padding: 30px;
-    max-width: 500px;
+    max-width: 100%;
+    width: 100%;
     animation: fadeInUp 0.5s ease-out;
     position: relative;
 }
@@ -443,6 +452,41 @@
     font-size: 0.85rem;
     color: #5a5451;
     line-height: 1.4;
+}
+
+.addr-phone {
+    margin: 4px 0 0;
+    font-size: 0.82rem;
+    color: #78716c;
+}
+
+.addr-phone-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.addr-country-select {
+    padding: 10px 8px;
+    border: 1.5px solid #d4a574;
+    border-radius: 8px;
+    background: #fff;
+    color: #2c2306;
+    font-size: 0.85rem;
+    font-family: 'Lato', sans-serif;
+    cursor: pointer;
+    min-width: 100px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.addr-country-select:focus {
+    outline: none;
+    border-color: #ffc404;
+    box-shadow: 0 0 0 3px rgba(255, 196, 4, 0.1);
+}
+
+.addr-phone-row input {
+    flex: 1;
 }
 
 .addr-card-actions {
