@@ -32,8 +32,6 @@ export default function Checkout() {
         street: '',
         postalCode: '',
         city: '',
-        phone: '',
-        countryCode: '+91',
     });
     const [formErrors, setFormErrors] = useState({});
     const [saveAddress, setSaveAddress] = useState(true);
@@ -65,6 +63,23 @@ export default function Checkout() {
         }
     }, [userProgressCtx.progress, authCtx.user]);
 
+    // Populate phone from selected address into contact details
+    function populatePhoneFromAddress(addr) {
+        if (addr && addr.phone) {
+            const phoneStr = addr.phone || '';
+            const codeMatch = phoneStr.match(/^(\+\d{1,4})/);
+            if (codeMatch) {
+                setContactInfo(prev => ({
+                    ...prev,
+                    countryCode: codeMatch[1],
+                    phone: phoneStr.slice(codeMatch[1].length),
+                }));
+            } else {
+                setContactInfo(prev => ({ ...prev, phone: phoneStr }));
+            }
+        }
+    }
+
     async function fetchAddresses() {
         try {
             const res = await fetch(`${API_ENDPOINTS.USER_ADDRESSES}?userId=${authCtx.user.userId}`);
@@ -73,6 +88,7 @@ export default function Checkout() {
                 setAddresses(data.addresses);
                 const defaultAddr = data.addresses.find(a => a.isDefault) || data.addresses[0];
                 setSelectedAddressId(defaultAddr.id);
+                populatePhoneFromAddress(defaultAddr);
                 setShowNewAddress(false);
             } else {
                 setAddresses([]);
@@ -94,7 +110,7 @@ export default function Checkout() {
         cartCtx.clearCart();
         clearData();
         setFormErrors({});
-        setNewAddress({ label: 'Home', street: '', postalCode: '', city: '', phone: '', countryCode: '+91' });
+        setNewAddress({ label: 'Home', street: '', postalCode: '', city: '' });
     }
 
     function handleContactChange(e) {
@@ -147,7 +163,7 @@ export default function Checkout() {
                         address: {
                             ...newAddress,
                             name: contactInfo.name,
-                            phone: newAddress.phone ? `${newAddress.countryCode}${newAddress.phone}` : contactInfo.phone,
+                            phone: contactInfo.phone ? `${contactInfo.countryCode}${contactInfo.phone}` : '',
                             isDefault: addresses.length === 0,
                         },
                     }),
@@ -268,7 +284,7 @@ export default function Checkout() {
                                 {formErrors.email && <span className="checkout-error">{formErrors.email}</span>}
                             </div>
                             <div className="checkout-field">
-                                <label>Phone <span className="optional-tag">(optional)</span></label>
+                                <label>Phone</label>
                                 <div className="addr-phone-row">
                                     <select
                                         value={contactInfo.countryCode}
@@ -314,13 +330,15 @@ export default function Checkout() {
                                             name="selectedAddress"
                                             value={addr.id}
                                             checked={selectedAddressId === addr.id}
-                                            onChange={() => setSelectedAddressId(addr.id)}
+                                            onChange={() => {
+                                                setSelectedAddressId(addr.id);
+                                                populatePhoneFromAddress(addr);
+                                            }}
                                         />
                                         <div className="address-card-content">
                                             <span className="address-label-tag">{addr.label || 'Address'}</span>
                                             <p className="address-text">{addr.street}</p>
                                             <p className="address-text">{addr.city}, {addr.postalCode}</p>
-                                            {addr.phone && <p className="address-text address-phone-text">📞 {addr.phone}</p>}
                                         </div>
                                         {addr.isDefault && <span className="default-badge">Default</span>}
                                     </label>
@@ -371,33 +389,6 @@ export default function Checkout() {
                                         className={formErrors.street ? 'input-error' : ''}
                                     />
                                     {formErrors.street && <span className="checkout-error">{formErrors.street}</span>}
-                                </div>
-                                <div className="checkout-field">
-                                    <label>Phone for this address <span className="optional-tag">(optional)</span></label>
-                                    <div className="addr-phone-row">
-                                        <select
-                                            value={newAddress.countryCode}
-                                            onChange={e => setNewAddress(prev => ({ ...prev, countryCode: e.target.value }))}
-                                            className="addr-country-select"
-                                        >
-                                            <option value="+91">🇮🇳 +91</option>
-                                            <option value="+1">🇺🇸 +1</option>
-                                            <option value="+44">🇬🇧 +44</option>
-                                            <option value="+61">🇦🇺 +61</option>
-                                            <option value="+81">🇯🇵 +81</option>
-                                            <option value="+49">🇩🇪 +49</option>
-                                            <option value="+86">🇨🇳 +86</option>
-                                            <option value="+971">🇦🇪 +971</option>
-                                            <option value="+65">🇸🇬 +65</option>
-                                            <option value="+33">🇫🇷 +33</option>
-                                        </select>
-                                        <input
-                                            type="tel"
-                                            value={newAddress.phone}
-                                            onChange={e => setNewAddress(prev => ({ ...prev, phone: e.target.value.replace(/[^0-9]/g, '') }))}
-                                            placeholder="9876543210"
-                                        />
-                                    </div>
                                 </div>
                                 <div className="checkout-field-row">
                                     <div className="checkout-field">

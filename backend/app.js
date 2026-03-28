@@ -10,7 +10,7 @@ import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import db from './firebase.js';
-import { generateOtp, storeOtp, verifyOtp, checkRateLimit } from './services/otpService.js';
+import { generateOtp, storeOtp, verifyOtp, checkRateLimit, cleanupOtp } from './services/otpService.js';
 import { sendOtpEmail, isEmailConfigured } from './services/emailService.js';
 import { sendOtpSms, isSmsConfigured } from './services/smsService.js';
 
@@ -435,6 +435,9 @@ app.post('/api/otp/verify', async (req, res) => {
         isNewUser: true,
       };
     }
+
+    // Clean up used OTPs after successful auth
+    await cleanupOtp(dest);
 
     res.status(200).json({
       message: userData.isNewUser ? 'Account created successfully!' : 'Login successful!',

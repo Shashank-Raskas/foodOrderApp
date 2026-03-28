@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import Cart from "./components/Cart";
 import Checkout from "./components/Checkout";
 import Header from "./components/Header";
+import Footer from "./components/Footer";
 import Meals from "./components/Meals";
 import AuthModal from "./components/AuthModal";
 import UserProfile from "./components/UserProfile";
@@ -72,6 +73,7 @@ function AppContent() {
         </>
       )}
       <ScrollToTopButton />
+      <Footer />
     </>
   );
 }
