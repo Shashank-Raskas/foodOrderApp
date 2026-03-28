@@ -4,15 +4,20 @@ let transporter = null;
 
 function getTransporter() {
   if (!transporter) {
-    const user = process.env.EMAIL_USER;
-    const pass = process.env.EMAIL_PASS;
+    const user = (process.env.EMAIL_USER || '').trim();
+    // Strip spaces from app password (Google displays them with spaces but SMTP expects no spaces)
+    const pass = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
     if (!user || !pass || user === 'your-email@gmail.com') {
       console.warn('[Email] EMAIL_USER / EMAIL_PASS not configured. Email OTP will not work.');
       return null;
     }
+    console.log(`[Email] Creating transporter for ${user}`);
     transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: { user, pass },
+      connectionTimeout: 10000, // 10s to establish connection
+      greetingTimeout: 10000,   // 10s for SMTP greeting
+      socketTimeout: 15000,     // 15s for socket inactivity
     });
   }
   return transporter;
@@ -23,7 +28,7 @@ export async function sendOtpEmail(to, otp) {
   if (!t) throw new Error('Email service not configured. Set EMAIL_USER and EMAIL_PASS in .env.');
 
   const mailOptions = {
-    from: `"The Flavor Alchemist" <${process.env.EMAIL_USER}>`,
+    from: `"The Flavor Alchemist" <${(process.env.EMAIL_USER || '').trim()}>`,
     to,
     subject: 'Your OTP Verification Code',
     html: `
@@ -43,11 +48,25 @@ export async function sendOtpEmail(to, otp) {
     `,
   };
 
-  await t.sendMail(mailOptions);
+  // Timeout wrapper — prevent hanging forever if SMTP is unreachable
+  const sendWithTimeout = Promise.race([
+    t.sendMail(mailOptions),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Email send timed out after 20 seconds. Check SMTP credentials and network.')), 20000)
+    ),
+  ]);
+
+  try {
+    await sendWithTimeout;
+  } catch (err) {
+    // Reset transporter so it's recreated on next attempt (in case creds were wrong)
+    transporter = null;
+    throw err;
+  }
 }
 
 export function isEmailConfigured() {
-  const user = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASS;
+  const user = (process.env.EMAIL_USER || '').trim();
+  const pass = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
   return !!(user && pass && user !== 'your-email@gmail.com');
 }

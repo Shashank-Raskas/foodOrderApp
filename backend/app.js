@@ -327,7 +327,9 @@ app.post('/api/otp/send', async (req, res) => {
     // Send OTP
     if (type === 'email') {
       if (isEmailConfigured()) {
+        console.log(`[OTP] Attempting to send email OTP to ${dest}...`);
         await sendOtpEmail(dest, otp);
+        console.log(`[OTP] Email OTP sent successfully to ${dest}`);
       } else {
         // Dev mode — no email configured, log OTP to console
         console.log(`\n========================================`);
@@ -341,7 +343,8 @@ app.post('/api/otp/send', async (req, res) => {
     console.log(`[OTP] Sent ${type} OTP to ${dest}`);
     res.status(200).json({ message: `OTP sent to your ${type === 'email' ? 'email' : 'phone'}!` });
   } catch (err) {
-    console.error('[OTP] Send error:', err);
+    console.error('[OTP] Send error:', err.message || err);
+    console.error('[OTP] Full error:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
     res.status(500).json({ message: err.message || 'Failed to send OTP. Please try again.' });
   }
 });
