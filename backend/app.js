@@ -621,6 +621,11 @@ app.put('/api/user/contact', async (req, res) => {
 
 // ===================== End User Addresses =====================
 
+// ===================== Health Check =====================
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime(), timestamp: Date.now() });
+});
+
 app.use((req, res) => {
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
@@ -632,5 +637,24 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+
+  // ===================== Keep-Alive Self-Ping =====================
+  // Ping ourselves every 10 minutes to prevent Render free-tier spin-down.
+  // 750 free hours/month ≈ 31.25 days — covers 24/7 for a single service.
+  const RENDER_URL = process.env.RENDER_EXTERNAL_URL; // Render sets this automatically
+  if (RENDER_URL) {
+    const PING_INTERVAL = 10 * 60 * 1000; // 10 minutes
+    setInterval(async () => {
+      try {
+        const resp = await fetch(`${RENDER_URL}/api/health`);
+        console.log(`[Keep-Alive] Pinged ${RENDER_URL}/api/health — ${resp.status}`);
+      } catch (err) {
+        console.warn(`[Keep-Alive] Ping failed:`, err.message);
+      }
+    }, PING_INTERVAL);
+    console.log(`[Keep-Alive] Self-ping enabled every 10 min → ${RENDER_URL}/api/health`);
+  } else {
+    console.log('[Keep-Alive] No RENDER_EXTERNAL_URL set — self-ping disabled (local dev)');
+  }
 });
 
