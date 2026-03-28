@@ -13,11 +13,14 @@ function getTransporter() {
     }
     console.log(`[Email] Creating transporter for ${user}`);
     transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: { user, pass },
-      connectionTimeout: 10000, // 10s to establish connection
-      greetingTimeout: 10000,   // 10s for SMTP greeting
-      socketTimeout: 15000,     // 15s for socket inactivity
+      family: 4,                // Force IPv4 — Render doesn't support IPv6 outbound
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
   }
   return transporter;
