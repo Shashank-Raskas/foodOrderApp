@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 // Force IPv4 for all DNS lookups — Render doesn't support outbound IPv6
 dns.setDefaultResultOrder('ipv4first');
 import bodyParser from 'body-parser';
+import compression from 'compression';
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
@@ -18,11 +19,15 @@ dotenv.config({ path: `.env.${process.env.NODE_ENV || 'development'}` });
 
 const app = express();
 
+// Gzip/Brotli compress all responses (JSON, images, HTML)
+app.use(compression());
+
 app.use(bodyParser.json());
 app.use(express.static('public', {
   maxAge: '7d',
   etag: true,
   lastModified: true,
+  immutable: true,
 }));
 
 // Ultra-permissive CORS for development and cloud deployment
