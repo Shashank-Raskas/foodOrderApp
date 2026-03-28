@@ -99,10 +99,28 @@ export async function verifyOtp(destination, otp) {
     return { valid: false, reason: 'Incorrect OTP. Please try again.' };
   }
 
-  // OTP is correct — mark as verified and clean up
+  // If already verified (re-verification for name flow), allow it
+  if (data.verified === true && data.otp === otp) {
+    return { valid: true };
+  }
+
+  // OTP is correct — mark as verified but DON'T delete yet
+  // (may be reused for the needs-name signup flow)
   await doc.ref.update({ verified: true });
-  // Delete after successful verification
-  await doc.ref.delete();
 
   return { valid: true };
+}
+
+/**
+ * Clean up OTPs for a destination after successful login/signup
+ */
+export async function cleanupOtp(destination) {
+  const snapshot = await db
+    .collection(OTP_COLLECTION)
+    .where('destination', '==', destination.toLowerCase())
+    .get();
+
+  const batch = db.batch();
+  snapshot.forEach((doc) => batch.delete(doc.ref));
+  if (!snapshot.empty) await batch.commit();
 }
