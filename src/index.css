@@ -352,8 +352,12 @@ h1 {
 .meals-content {
   flex: 1;
   min-width: 0;
-  padding-left: 280px;
+  padding-left: 250px;
   transition: padding-left 0.3s ease;
+}
+
+.meals-content.sidebar-collapsed {
+  padding-left: 58px;
 }
 
 .meals-result-bar {
@@ -462,14 +466,38 @@ h1 {
   top: 60px;
   left: 0;
   bottom: 0;
-  width: 270px;
+  width: 240px;
   background: linear-gradient(180deg, #1d1a16 0%, #29251c 100%);
   border-right: 1px solid #3a332a;
   overflow-y: auto;
   z-index: 80;
-  transition: transform 0.3s ease;
+  transition: width 0.3s ease, transform 0.3s ease;
   scrollbar-width: thin;
   scrollbar-color: #3a332a #1d1a16;
+}
+
+.filter-sidebar.collapsed {
+  width: 48px;
+  overflow: hidden;
+}
+
+.filter-sidebar.collapsed .sidebar-header h2 span,
+.filter-sidebar.collapsed .clear-all-btn,
+.filter-sidebar.collapsed .sidebar-sections {
+  display: none;
+}
+
+.filter-sidebar.collapsed .sidebar-header {
+  justify-content: center;
+  padding: 20px 0 14px;
+}
+
+.filter-sidebar.collapsed .sidebar-header h2 {
+  justify-content: center;
+}
+
+.filter-sidebar.collapsed .sidebar-collapse-btn {
+  transform: rotate(180deg);
 }
 
 .filter-sidebar::-webkit-scrollbar {
@@ -489,12 +517,32 @@ h1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 18px 16px 14px;
+  padding: 22px 16px 14px;
   border-bottom: 1px solid #3a332a;
   position: sticky;
   top: 0;
   background: #1d1a16;
   z-index: 2;
+}
+
+.sidebar-collapse-btn {
+  background: none;
+  border: none;
+  color: #a8a29e;
+  cursor: pointer;
+  padding: 4px;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-collapse-btn:hover {
+  color: #ffc404;
+}
+
+.sidebar-collapse-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .sidebar-header h2 {
@@ -2164,6 +2212,29 @@ h1 {
     box-shadow: none;
   }
 
+  .filter-sidebar.collapsed {
+    width: 280px;
+  }
+
+  .filter-sidebar.collapsed .sidebar-header h2 span,
+  .filter-sidebar.collapsed .clear-all-btn,
+  .filter-sidebar.collapsed .sidebar-sections {
+    display: block;
+  }
+
+  .filter-sidebar.collapsed .sidebar-header {
+    justify-content: space-between;
+    padding: 22px 16px 14px;
+  }
+
+  .sidebar-collapse-btn {
+    display: none;
+  }
+
+  .meals-content.sidebar-collapsed {
+    padding-left: 0;
+  }
+
   .filter-sidebar.open {
     transform: translateX(0);
     box-shadow: 8px 0 30px rgba(0, 0, 0, 0.5);
@@ -2721,6 +2792,8 @@ h1 {
   font-family: 'Raleway', sans-serif;
   margin-top: 4rem;
   border-top: 2px solid rgba(255, 196, 4, 0.15);
+  position: relative;
+  z-index: 81;
 }
 
 .footer-top {
