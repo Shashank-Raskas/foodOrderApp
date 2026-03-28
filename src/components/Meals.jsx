@@ -30,6 +30,7 @@ export default function Meals() {
     const navigate = useNavigate();
     const [filters, setFilters] = useState(DEFAULT_FILTERS);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
 
     const {
@@ -221,9 +222,11 @@ export default function Meals() {
                     onClearAll={handleClearAll}
                     isOpen={sidebarOpen}
                     onToggle={() => setSidebarOpen((prev) => !prev)}
+                    isCollapsed={sidebarCollapsed}
+                    onCollapseToggle={() => setSidebarCollapsed((prev) => !prev)}
                 />
 
-                <main className="meals-content">
+                <main className={`meals-content${sidebarCollapsed ? " sidebar-collapsed" : ""}`}>
                     <div className="meals-result-bar">
                         <span className="result-count">
                             {filteredMeals.length} {filteredMeals.length === 1 ? "dish" : "dishes"} found
