@@ -114,7 +114,7 @@ export default function Meals() {
         }
 
         return result;
-    }, [loadedMeals, searchTerm, filters]);
+    }, [loadedMeals, debouncedSearch, filters]);
 
     const totalPages = Math.ceil(filteredMeals.length / MEALS_PER_PAGE);
     const pagedMeals = filteredMeals.slice(
