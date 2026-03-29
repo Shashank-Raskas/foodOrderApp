@@ -38,9 +38,11 @@ export default function Footer() {
           <h4>Quick Links</h4>
           <ul>
             <li><a onClick={() => { navigate('/'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Home</a></li>
+            <li><a onClick={() => navigate('/menu')}>Menu</a></li>
+            <li><a onClick={() => navigate('/about')}>About Us</a></li>
+            <li><a onClick={() => navigate('/contact')}>Contact Us</a></li>
             <li><a onClick={() => navigate('/favorites')}>Favorites</a></li>
             <li><a onClick={() => navigate('/orders')}>Order History</a></li>
-            <li><a onClick={() => navigate('/profile')}>My Profile</a></li>
           </ul>
         </div>
 
@@ -50,15 +52,15 @@ export default function Footer() {
           <ul className="footer-contact">
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              <span>123 Flavor Street, Foodie City, FC 56789</span>
+              <span>Plot No. 83, Opp. Cyber Towers, Hitech City Road, Madhapur, Hyderabad — 500081</span>
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
-              <span>+91 98765 43210</span>
+              <span>040-4857-2936 / 040-4857-2937</span>
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-              <span>support@flavoralchemist.com</span>
+              <a href="mailto:flavoralchemist9@gmail.com" style={{color: 'inherit'}}>flavoralchemist9@gmail.com</a>
             </li>
           </ul>
         </div>
@@ -67,11 +69,11 @@ export default function Footer() {
         <div className="footer-section">
           <h4>Information</h4>
           <ul>
-            <li><a href="#">About Us</a></li>
-            <li><a href="#">Privacy Policy</a></li>
-            <li><a href="#">Terms &amp; Conditions</a></li>
-            <li><a href="#">Refund Policy</a></li>
-            <li><a href="#">FAQs</a></li>
+            <li><a onClick={() => navigate('/about')}>About Us</a></li>
+            <li><a onClick={() => navigate('/privacy-policy')}>Privacy Policy</a></li>
+            <li><a onClick={() => navigate('/terms')}>Terms &amp; Conditions</a></li>
+            <li><a onClick={() => navigate('/refund-policy')}>Refund Policy</a></li>
+            <li><a onClick={() => navigate('/faqs')}>FAQs</a></li>
           </ul>
         </div>
       </div>
@@ -79,6 +81,9 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="footer-bottom">
         <p>&copy; {currentYear} The Flavor Alchemist. All rights reserved.</p>
+        <p className="footer-designed-by">
+          Designed &amp; Developed by <strong>Shashank Raskas</strong>
+        </p>
         <p className="footer-made-with">
           Made with <span className="footer-heart">♥</span> for food lovers everywhere
         </p>

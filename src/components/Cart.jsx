@@ -20,7 +20,7 @@ export default function Cart() {
 
     function handleBrowseMeals() {
         userProgressCtx.hideCart();
-        navigate('/');
+        navigate('/menu');
     }
 
     function handleGoToCheckout() {

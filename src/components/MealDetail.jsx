@@ -116,7 +116,7 @@ export default function MealDetail() {
             <PageLayout className="meal-detail-page">
                 <div className="meal-detail-error">
                     <p>😕 {error || 'Meal not found'}</p>
-                    <button onClick={() => navigate('/')}>Back to Menu</button>
+                    <button onClick={() => navigate('/menu')}>Back to Menu</button>
                 </div>
             </PageLayout>
         );

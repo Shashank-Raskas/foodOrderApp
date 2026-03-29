@@ -13,6 +13,54 @@ const requestConfig = {
     headers: { 'Content-Type': 'application/json' },
 };
 
+// Available promo codes
+const PROMO_CODES = {
+    WELCOME60: { type: 'percent', value: 60, maxDiscount: 250, minOrder: 0, label: '60% off up to ₹250 (New User)' },
+    FLAT100: { type: 'flat', value: 100, maxDiscount: 100, minOrder: 500, label: '₹100 off on orders above ₹500' },
+    TASTY20: { type: 'percent', value: 20, maxDiscount: 150, minOrder: 200, label: '20% off up to ₹150' },
+    FEAST50: { type: 'percent', value: 50, maxDiscount: 200, minOrder: 300, label: '50% off up to ₹200' },
+};
+
+const PAYMENT_METHODS = [
+    {
+        id: 'razorpay',
+        name: 'Razorpay',
+        desc: 'Cards, UPI, Net Banking, Wallets',
+        color: '#072654',
+        icon: (
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="24" height="24" rx="4" fill="#072654"/>
+                <path d="M10.5 6L7 18h2.5l1-3.5h3L15 18h2.5L14 6h-3.5zm1 3l1 4h-2l1-4z" fill="#fff"/>
+            </svg>
+        ),
+    },
+    {
+        id: 'phonepe',
+        name: 'PhonePe',
+        desc: 'UPI, Cards, Wallet',
+        color: '#5f259f',
+        icon: (
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="24" height="24" rx="4" fill="#5f259f"/>
+                <path d="M8 7h4a4 4 0 010 8h-1v3H8V7zm3 6a2 2 0 000-4h-1v4h1z" fill="#fff"/>
+            </svg>
+        ),
+    },
+    {
+        id: 'cashfree',
+        name: 'Cashfree',
+        desc: 'UPI, Cards, Net Banking, EMI',
+        color: '#00b9f5',
+        icon: (
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="24" height="24" rx="4" fill="#00b9f5"/>
+                <path d="M12 7a5 5 0 100 10 5 5 0 000-10zm0 2a3 3 0 110 6 3 3 0 010-6z" fill="#fff"/>
+                <circle cx="12" cy="12" r="1.5" fill="#fff"/>
+            </svg>
+        ),
+    },
+];
+
 export default function Checkout() {
     const cartCtx = useContext(CartContext);
     const userProgressCtx = useContext(UserProgressContext);
@@ -36,10 +84,31 @@ export default function Checkout() {
     const [formErrors, setFormErrors] = useState({});
     const [saveAddress, setSaveAddress] = useState(true);
 
+    // Promo code state
+    const [promoInput, setPromoInput] = useState('');
+    const [appliedPromo, setAppliedPromo] = useState(null);
+    const [promoError, setPromoError] = useState('');
+
+    // Payment gateway state
+    const [selectedPayment, setSelectedPayment] = useState('razorpay');
+    const [paymentProcessing, setPaymentProcessing] = useState(false);
+
     const { data, error, isLoading, sendRequest, clearData } = useHttp(API_ENDPOINTS.ORDERS, requestConfig);
 
     const cartTotal = cartCtx.items.reduce((totalPrice, item) => totalPrice + item.quantity * item.price, 0);
     const totalItems = cartCtx.items.reduce((t, i) => t + i.quantity, 0);
+
+    // Calculate discount
+    let discount = 0;
+    if (appliedPromo) {
+        const promo = PROMO_CODES[appliedPromo];
+        if (promo.type === 'percent') {
+            discount = Math.min((cartTotal * promo.value) / 100, promo.maxDiscount);
+        } else {
+            discount = promo.value;
+        }
+    }
+    const finalTotal = Math.max(cartTotal - discount, 0);
 
     // Load user data and addresses when modal opens
     useEffect(() => {
@@ -111,6 +180,36 @@ export default function Checkout() {
         clearData();
         setFormErrors({});
         setNewAddress({ label: 'Home', street: '', postalCode: '', city: '' });
+        setAppliedPromo(null);
+        setPromoInput('');
+        setPromoError('');
+        setSelectedPayment('razorpay');
+        setPaymentProcessing(false);
+    }
+
+    function handleApplyPromo() {
+        const code = promoInput.trim().toUpperCase();
+        if (!code) {
+            setPromoError('Please enter a promo code');
+            return;
+        }
+        const promo = PROMO_CODES[code];
+        if (!promo) {
+            setPromoError('Invalid promo code');
+            return;
+        }
+        if (promo.minOrder > 0 && cartTotal < promo.minOrder) {
+            setPromoError(`Minimum order of ${currencyFormatter.format(promo.minOrder)} required`);
+            return;
+        }
+        setAppliedPromo(code);
+        setPromoError('');
+    }
+
+    function handleRemovePromo() {
+        setAppliedPromo(null);
+        setPromoInput('');
+        setPromoError('');
     }
 
     function handleContactChange(e) {
@@ -190,6 +289,11 @@ export default function Checkout() {
             } catch (err) { /* silent */ }
         }
 
+        // Simulate payment processing
+        setPaymentProcessing(true);
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        setPaymentProcessing(false);
+
         await sendRequest(JSON.stringify({
             order: {
                 items: cartCtx.items,
@@ -201,6 +305,11 @@ export default function Checkout() {
                     'postal-code': orderAddress.postalCode || orderAddress['postal-code'],
                     city: orderAddress.city,
                 },
+                promoCode: appliedPromo || null,
+                discount: discount,
+                paymentMethod: selectedPayment,
+                subtotal: cartTotal,
+                total: finalTotal,
             },
             userId: authCtx.user?.userId,
         }));
@@ -208,6 +317,7 @@ export default function Checkout() {
 
     // Success view
     if (data && !error) {
+        const paymentName = PAYMENT_METHODS.find(p => p.id === selectedPayment)?.name || selectedPayment;
         return (
             <Modal open={userProgressCtx.progress === 'checkout'} onClose={handleFinish}>
                 <div className="checkout-container">
@@ -215,6 +325,7 @@ export default function Checkout() {
                         <div className="success-icon">✅</div>
                         <h2>Order Placed!</h2>
                         <p>Your order has been placed successfully.</p>
+                        <p className="success-hint">Payment processed via <strong>{paymentName}</strong></p>
                         <p className="success-hint">We'll send a confirmation to <strong>{contactInfo.email}</strong></p>
                         <button className="checkout-done-btn" onClick={handleFinish}>Done</button>
                     </div>
@@ -250,9 +361,21 @@ export default function Checkout() {
                         })}
                     </div>
                     <div className="checkout-total-row">
-                        <span>Total ({totalItems} items)</span>
+                        <span>Subtotal ({totalItems} items)</span>
                         <span className="checkout-total-amount">{currencyFormatter.format(cartTotal)}</span>
                     </div>
+                    {discount > 0 && (
+                        <div className="checkout-total-row checkout-discount-row">
+                            <span>Discount ({appliedPromo})</span>
+                            <span className="checkout-discount-amount">-{currencyFormatter.format(discount)}</span>
+                        </div>
+                    )}
+                    {discount > 0 && (
+                        <div className="checkout-total-row checkout-final-row">
+                            <span><strong>Total</strong></span>
+                            <span className="checkout-total-amount"><strong>{currencyFormatter.format(finalTotal)}</strong></span>
+                        </div>
+                    )}
                 </div>
 
                 <form onSubmit={handleSubmit}>
@@ -428,12 +551,85 @@ export default function Checkout() {
 
                     {error && <Error title="Failed to submit order" message={error} />}
 
+                    {/* ═══ Promo Code ═══ */}
+                    <div className="checkout-section checkout-promo-section">
+                        <h3>🏷️ Promo Code</h3>
+                        {appliedPromo ? (
+                            <div className="promo-applied">
+                                <div className="promo-applied-info">
+                                    <span className="promo-applied-code">{appliedPromo}</span>
+                                    <span className="promo-applied-label">{PROMO_CODES[appliedPromo].label}</span>
+                                    <span className="promo-applied-saving">You save {currencyFormatter.format(discount)}</span>
+                                </div>
+                                <button type="button" className="promo-remove-btn" onClick={handleRemovePromo}>Remove</button>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="promo-input-row">
+                                    <input
+                                        type="text"
+                                        placeholder="Enter promo code"
+                                        value={promoInput}
+                                        onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(''); }}
+                                        className="promo-input"
+                                    />
+                                    <button type="button" className="promo-apply-btn" onClick={handleApplyPromo}>Apply</button>
+                                </div>
+                                {promoError && <span className="checkout-error promo-error">{promoError}</span>}
+                                <div className="promo-suggestions">
+                                    <span className="promo-suggestions-label">Available codes:</span>
+                                    {Object.entries(PROMO_CODES).map(([code, info]) => (
+                                        <button
+                                            key={code}
+                                            type="button"
+                                            className="promo-suggestion-chip"
+                                            onClick={() => { setPromoInput(code); }}
+                                        >
+                                            {code} <span className="promo-chip-info">— {info.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    {/* ═══ Payment Method ═══ */}
+                    <div className="checkout-section checkout-payment-section">
+                        <h3>💳 Payment Method</h3>
+                        <div className="payment-methods">
+                            {PAYMENT_METHODS.map(method => (
+                                <label
+                                    key={method.id}
+                                    className={`payment-card${selectedPayment === method.id ? ' payment-selected' : ''}`}
+                                >
+                                    <input
+                                        type="radio"
+                                        name="paymentMethod"
+                                        value={method.id}
+                                        checked={selectedPayment === method.id}
+                                        onChange={() => setSelectedPayment(method.id)}
+                                    />
+                                    <div className="payment-card-icon">{method.icon}</div>
+                                    <div className="payment-card-info">
+                                        <span className="payment-card-name">{method.name}</span>
+                                        <span className="payment-card-desc">{method.desc}</span>
+                                    </div>
+                                    {selectedPayment === method.id && <span className="payment-check">✓</span>}
+                                </label>
+                            ))}
+                        </div>
+                        <p className="payment-secure-note">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                            All transactions are secured with 256-bit encryption
+                        </p>
+                    </div>
+
                     <div className="checkout-footer">
                         <button type="button" className="checkout-back-btn" onClick={handleClose}>
                             ← Back to Cart
                         </button>
-                        <button type="submit" className="checkout-pay-btn" disabled={isLoading}>
-                            {isLoading ? 'Placing Order...' : `Place Order • ${currencyFormatter.format(cartTotal)}`}
+                        <button type="submit" className="checkout-pay-btn" disabled={isLoading || paymentProcessing}>
+                            {paymentProcessing ? 'Processing Payment...' : isLoading ? 'Placing Order...' : `Pay ${currencyFormatter.format(finalTotal)} • ${PAYMENT_METHODS.find(p => p.id === selectedPayment)?.name}`}
                         </button>
                     </div>
                 </form>

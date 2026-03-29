@@ -5,11 +5,18 @@ import Checkout from "./components/Checkout";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import Meals from "./components/Meals";
+import LandingPage from "./components/LandingPage";
 import AuthModal from "./components/AuthModal";
 import UserProfile from "./components/UserProfile";
 import Favorites from "./components/Favorites";
 import OrderHistory from "./components/OrderHistory";
 import MealDetail from "./components/MealDetail";
+import AboutUs from "./components/AboutUs";
+import ContactUs from "./components/ContactUs";
+import PrivacyPolicy from "./components/PrivacyPolicy";
+import TermsConditions from "./components/TermsConditions";
+import RefundPolicy from "./components/RefundPolicy";
+import FAQs from "./components/FAQs";
 import ScrollToTop from "./components/UI/ScrollToTop";
 import ProtectedRoute from "./components/UI/ProtectedRoute";
 import { CartContextProvider } from "./components/store/CartContext";
@@ -52,8 +59,15 @@ function AppContent() {
       <ScrollToTop />
       <Header />
       <Routes>
-        <Route path="/" element={<Meals />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/menu" element={<Meals />} />
         <Route path="/meal/:mealId" element={<MealDetail />} />
+        <Route path="/about" element={<AboutUs />} />
+        <Route path="/contact" element={<ContactUs />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsConditions />} />
+        <Route path="/refund-policy" element={<RefundPolicy />} />
+        <Route path="/faqs" element={<FAQs />} />
         <Route path="/favorites" element={
           <ProtectedRoute><Favorites /></ProtectedRoute>
         } />
