@@ -92,6 +92,8 @@ export default function Checkout() {
     // Payment gateway state
     const [selectedPayment, setSelectedPayment] = useState('razorpay');
     const [paymentProcessing, setPaymentProcessing] = useState(false);
+    const [paymentError, setPaymentError] = useState('');
+    const [paymentConfig, setPaymentConfig] = useState(null);
 
     const { data, error, isLoading, sendRequest, clearData } = useHttp(API_ENDPOINTS.ORDERS, requestConfig);
 
@@ -109,6 +111,20 @@ export default function Checkout() {
         }
     }
     const finalTotal = Math.max(cartTotal - discount, 0);
+
+    // Fetch payment gateway config on mount
+    useEffect(() => {
+        async function fetchConfig() {
+            try {
+                const res = await fetch(API_ENDPOINTS.PAYMENT_CONFIG);
+                const cfg = await res.json();
+                setPaymentConfig(cfg);
+            } catch (err) {
+                console.error('Failed to fetch payment config:', err);
+            }
+        }
+        fetchConfig();
+    }, []);
 
     // Load user data and addresses when modal opens
     useEffect(() => {
@@ -185,6 +201,7 @@ export default function Checkout() {
         setPromoError('');
         setSelectedPayment('razorpay');
         setPaymentProcessing(false);
+        setPaymentError('');
     }
 
     function handleApplyPromo() {
@@ -289,12 +306,8 @@ export default function Checkout() {
             } catch (err) { /* silent */ }
         }
 
-        // Simulate payment processing
-        setPaymentProcessing(true);
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setPaymentProcessing(false);
-
-        await sendRequest(JSON.stringify({
+        // Build the order payload (used after payment succeeds)
+        const orderPayload = {
             order: {
                 items: cartCtx.items,
                 customer: {
@@ -312,7 +325,202 @@ export default function Checkout() {
                 total: finalTotal,
             },
             userId: authCtx.user?.userId,
+        };
+
+        setPaymentProcessing(true);
+        setPaymentError('');
+
+        try {
+            // ═══ RAZORPAY ═══
+            if (selectedPayment === 'razorpay') {
+                await processRazorpay(orderPayload);
+            }
+            // ═══ PHONEPE ═══
+            else if (selectedPayment === 'phonepe') {
+                await processPhonePe(orderPayload);
+            }
+            // ═══ CASHFREE ═══
+            else if (selectedPayment === 'cashfree') {
+                await processCashfree(orderPayload);
+            }
+        } catch (payErr) {
+            console.error('Payment failed:', payErr);
+            setPaymentError(payErr.message || 'Payment failed. Please try again.');
+            setPaymentProcessing(false);
+        }
+    }
+
+    // ─── Razorpay Flow ───
+    async function processRazorpay(orderPayload) {
+        // 1. Create order on backend
+        const createRes = await fetch(API_ENDPOINTS.RAZORPAY_CREATE_ORDER, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                amount: finalTotal,
+                receipt: `order_${Date.now()}`,
+                notes: { userId: authCtx.user?.userId },
+            }),
+        });
+        const createData = await createRes.json();
+        if (!createRes.ok) throw new Error(createData.message || 'Failed to create Razorpay order');
+
+        // 2. Open Razorpay checkout popup
+        return new Promise((resolve, reject) => {
+            const options = {
+                key: paymentConfig?.razorpay?.keyId,
+                amount: createData.amount,
+                currency: createData.currency || 'INR',
+                name: 'The Flavor Alchemist',
+                description: `Order - ${cartCtx.items.length} items`,
+                order_id: createData.orderId,
+                handler: async function (response) {
+                    try {
+                        // 3. Verify signature on backend
+                        const verifyRes = await fetch(API_ENDPOINTS.RAZORPAY_VERIFY, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                            }),
+                        });
+                        const verifyData = await verifyRes.json();
+                        if (!verifyData.verified) throw new Error('Payment verification failed');
+
+                        // 4. Save the order with payment details
+                        orderPayload.order.paymentId = response.razorpay_payment_id;
+                        orderPayload.order.paymentStatus = 'paid';
+                        await sendRequest(JSON.stringify(orderPayload));
+                        setPaymentProcessing(false);
+                        resolve();
+                    } catch (err) {
+                        setPaymentProcessing(false);
+                        reject(err);
+                    }
+                },
+                prefill: {
+                    name: contactInfo.name,
+                    email: contactInfo.email,
+                    contact: contactInfo.phone ? `${contactInfo.countryCode}${contactInfo.phone}` : '',
+                },
+                theme: { color: '#d4a574' },
+                modal: {
+                    ondismiss: function () {
+                        setPaymentProcessing(false);
+                        reject(new Error('Payment cancelled by user'));
+                    },
+                },
+            };
+
+            if (!window.Razorpay) {
+                setPaymentProcessing(false);
+                reject(new Error('Razorpay SDK not loaded. Please refresh and try again.'));
+                return;
+            }
+
+            const rzp = new window.Razorpay(options);
+            rzp.on('payment.failed', function (response) {
+                setPaymentProcessing(false);
+                reject(new Error(response.error?.description || 'Razorpay payment failed'));
+            });
+            rzp.open();
+        });
+    }
+
+    // ─── PhonePe Flow ───
+    async function processPhonePe(orderPayload) {
+        const transactionId = `TXN_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+        // 1. Initiate payment on backend
+        const initiateRes = await fetch(API_ENDPOINTS.PHONEPE_INITIATE, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                amount: finalTotal,
+                transactionId,
+                phone: contactInfo.phone ? `${contactInfo.countryCode}${contactInfo.phone}` : '',
+            }),
+        });
+        const initiateData = await initiateRes.json();
+        if (!initiateRes.ok || !initiateData.success) {
+            throw new Error(initiateData.message || 'Failed to initiate PhonePe payment');
+        }
+
+        // 2. Store pending order data in sessionStorage for the return callback
+        sessionStorage.setItem('pendingPhonePeOrder', JSON.stringify({
+            orderPayload,
+            transactionId: initiateData.transactionId,
         }));
+
+        // 3. Redirect to PhonePe payment page
+        window.location.href = initiateData.redirectUrl;
+    }
+
+    // ─── Cashfree Flow ───
+    async function processCashfree(orderPayload) {
+        // 1. Create order on backend
+        const createRes = await fetch(API_ENDPOINTS.CASHFREE_CREATE_ORDER, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                amount: finalTotal,
+                customerName: contactInfo.name,
+                customerEmail: contactInfo.email,
+                customerPhone: contactInfo.phone ? `${contactInfo.countryCode}${contactInfo.phone}` : '9999999999',
+                customerId: authCtx.user?.userId,
+            }),
+        });
+        const createData = await createRes.json();
+        if (!createRes.ok) throw new Error(createData.message || 'Failed to create Cashfree order');
+
+        // 2. Open Cashfree Drop checkout
+        return new Promise((resolve, reject) => {
+            if (!window.Cashfree) {
+                setPaymentProcessing(false);
+                reject(new Error('Cashfree SDK not loaded. Please refresh and try again.'));
+                return;
+            }
+
+            const cashfree = window.Cashfree({
+                mode: paymentConfig?.cashfree?.env === 'production' ? 'production' : 'sandbox',
+            });
+
+            cashfree.checkout({
+                paymentSessionId: createData.paymentSessionId,
+                redirectTarget: '_modal',
+            }).then(async (result) => {
+                if (result.error) {
+                    setPaymentProcessing(false);
+                    reject(new Error(result.error.message || 'Cashfree payment failed'));
+                    return;
+                }
+                if (result.paymentDetails) {
+                    // 3. Verify on backend
+                    try {
+                        const statusRes = await fetch(`${API_ENDPOINTS.CASHFREE_STATUS}/${createData.orderId}`);
+                        const statusData = await statusRes.json();
+                        if (statusData.order_status === 'PAID') {
+                            orderPayload.order.paymentId = createData.orderId;
+                            orderPayload.order.paymentStatus = 'paid';
+                            await sendRequest(JSON.stringify(orderPayload));
+                            setPaymentProcessing(false);
+                            resolve();
+                        } else {
+                            setPaymentProcessing(false);
+                            reject(new Error('Payment not confirmed. Status: ' + statusData.order_status));
+                        }
+                    } catch (err) {
+                        setPaymentProcessing(false);
+                        reject(err);
+                    }
+                }
+            }).catch((err) => {
+                setPaymentProcessing(false);
+                reject(new Error(err.message || 'Cashfree checkout error'));
+            });
+        });
     }
 
     // Success view
@@ -550,6 +758,7 @@ export default function Checkout() {
                     </div>
 
                     {error && <Error title="Failed to submit order" message={error} />}
+                    {paymentError && <Error title="Payment Failed" message={paymentError} />}
 
                     {/* ═══ Promo Code ═══ */}
                     <div className="checkout-section checkout-promo-section">
