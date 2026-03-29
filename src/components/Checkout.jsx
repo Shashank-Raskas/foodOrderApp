@@ -21,46 +21,6 @@ const PROMO_CODES = {
     FEAST50: { type: 'percent', value: 50, maxDiscount: 200, minOrder: 300, label: '50% off up to ₹200' },
 };
 
-const PAYMENT_METHODS = [
-    {
-        id: 'razorpay',
-        name: 'Razorpay',
-        desc: 'Cards, UPI, Net Banking, Wallets',
-        color: '#072654',
-        icon: (
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="24" height="24" rx="4" fill="#072654"/>
-                <path d="M10.5 6L7 18h2.5l1-3.5h3L15 18h2.5L14 6h-3.5zm1 3l1 4h-2l1-4z" fill="#fff"/>
-            </svg>
-        ),
-    },
-    {
-        id: 'phonepe',
-        name: 'PhonePe',
-        desc: 'UPI, Cards, Wallet',
-        color: '#5f259f',
-        icon: (
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="24" height="24" rx="4" fill="#5f259f"/>
-                <path d="M8 7h4a4 4 0 010 8h-1v3H8V7zm3 6a2 2 0 000-4h-1v4h1z" fill="#fff"/>
-            </svg>
-        ),
-    },
-    {
-        id: 'cashfree',
-        name: 'Cashfree',
-        desc: 'UPI, Cards, Net Banking, EMI',
-        color: '#00b9f5',
-        icon: (
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="24" height="24" rx="4" fill="#00b9f5"/>
-                <path d="M12 7a5 5 0 100 10 5 5 0 000-10zm0 2a3 3 0 110 6 3 3 0 010-6z" fill="#fff"/>
-                <circle cx="12" cy="12" r="1.5" fill="#fff"/>
-            </svg>
-        ),
-    },
-];
-
 export default function Checkout() {
     const cartCtx = useContext(CartContext);
     const userProgressCtx = useContext(UserProgressContext);
@@ -89,12 +49,6 @@ export default function Checkout() {
     const [appliedPromo, setAppliedPromo] = useState(null);
     const [promoError, setPromoError] = useState('');
 
-    // Payment gateway state
-    const [selectedPayment, setSelectedPayment] = useState('razorpay');
-    const [paymentProcessing, setPaymentProcessing] = useState(false);
-    const [paymentError, setPaymentError] = useState('');
-    const [paymentConfig, setPaymentConfig] = useState(null);
-
     const { data, error, isLoading, sendRequest, clearData } = useHttp(API_ENDPOINTS.ORDERS, requestConfig);
 
     const cartTotal = cartCtx.items.reduce((totalPrice, item) => totalPrice + item.quantity * item.price, 0);
@@ -111,20 +65,6 @@ export default function Checkout() {
         }
     }
     const finalTotal = Math.max(cartTotal - discount, 0);
-
-    // Fetch payment gateway config on mount
-    useEffect(() => {
-        async function fetchConfig() {
-            try {
-                const res = await fetch(API_ENDPOINTS.PAYMENT_CONFIG);
-                const cfg = await res.json();
-                setPaymentConfig(cfg);
-            } catch (err) {
-                console.error('Failed to fetch payment config:', err);
-            }
-        }
-        fetchConfig();
-    }, []);
 
     // Load user data and addresses when modal opens
     useEffect(() => {
@@ -199,9 +139,6 @@ export default function Checkout() {
         setAppliedPromo(null);
         setPromoInput('');
         setPromoError('');
-        setSelectedPayment('razorpay');
-        setPaymentProcessing(false);
-        setPaymentError('');
     }
 
     function handleApplyPromo() {
@@ -320,212 +257,17 @@ export default function Checkout() {
                 },
                 promoCode: appliedPromo || null,
                 discount: discount,
-                paymentMethod: selectedPayment,
                 subtotal: cartTotal,
                 total: finalTotal,
             },
             userId: authCtx.user?.userId,
         };
 
-        setPaymentProcessing(true);
-        setPaymentError('');
-
-        try {
-            // ═══ RAZORPAY ═══
-            if (selectedPayment === 'razorpay') {
-                await processRazorpay(orderPayload);
-            }
-            // ═══ PHONEPE ═══
-            else if (selectedPayment === 'phonepe') {
-                await processPhonePe(orderPayload);
-            }
-            // ═══ CASHFREE ═══
-            else if (selectedPayment === 'cashfree') {
-                await processCashfree(orderPayload);
-            }
-        } catch (payErr) {
-            console.error('Payment failed:', payErr);
-            setPaymentError(payErr.message || 'Payment failed. Please try again.');
-            setPaymentProcessing(false);
-        }
-    }
-
-    // ─── Razorpay Flow ───
-    async function processRazorpay(orderPayload) {
-        // 1. Create order on backend
-        const createRes = await fetch(API_ENDPOINTS.RAZORPAY_CREATE_ORDER, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                amount: finalTotal,
-                receipt: `order_${Date.now()}`,
-                notes: { userId: authCtx.user?.userId },
-            }),
-        });
-        const createData = await createRes.json();
-        if (!createRes.ok) throw new Error(createData.message || 'Failed to create Razorpay order');
-
-        // 2. Open Razorpay checkout popup
-        return new Promise((resolve, reject) => {
-            const options = {
-                key: paymentConfig?.razorpay?.keyId,
-                amount: createData.amount,
-                currency: createData.currency || 'INR',
-                name: 'The Flavor Alchemist',
-                description: `Order - ${cartCtx.items.length} items`,
-                order_id: createData.orderId,
-                handler: async function (response) {
-                    try {
-                        // 3. Verify signature on backend
-                        const verifyRes = await fetch(API_ENDPOINTS.RAZORPAY_VERIFY, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                razorpay_order_id: response.razorpay_order_id,
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_signature: response.razorpay_signature,
-                            }),
-                        });
-                        const verifyData = await verifyRes.json();
-                        if (!verifyData.verified) throw new Error('Payment verification failed');
-
-                        // 4. Save the order with payment details
-                        orderPayload.order.paymentId = response.razorpay_payment_id;
-                        orderPayload.order.paymentStatus = 'paid';
-                        await sendRequest(JSON.stringify(orderPayload));
-                        setPaymentProcessing(false);
-                        resolve();
-                    } catch (err) {
-                        setPaymentProcessing(false);
-                        reject(err);
-                    }
-                },
-                prefill: {
-                    name: contactInfo.name,
-                    email: contactInfo.email,
-                    contact: contactInfo.phone ? `${contactInfo.countryCode}${contactInfo.phone}` : '',
-                },
-                theme: { color: '#d4a574' },
-                modal: {
-                    ondismiss: function () {
-                        setPaymentProcessing(false);
-                        reject(new Error('Payment cancelled by user'));
-                    },
-                },
-            };
-
-            if (!window.Razorpay) {
-                setPaymentProcessing(false);
-                reject(new Error('Razorpay SDK not loaded. Please refresh and try again.'));
-                return;
-            }
-
-            const rzp = new window.Razorpay(options);
-            rzp.on('payment.failed', function (response) {
-                setPaymentProcessing(false);
-                reject(new Error(response.error?.description || 'Razorpay payment failed'));
-            });
-            rzp.open();
-        });
-    }
-
-    // ─── PhonePe Flow ───
-    async function processPhonePe(orderPayload) {
-        const transactionId = `TXN_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-
-        // 1. Initiate payment on backend
-        const initiateRes = await fetch(API_ENDPOINTS.PHONEPE_INITIATE, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                amount: finalTotal,
-                transactionId,
-                phone: contactInfo.phone ? `${contactInfo.countryCode}${contactInfo.phone}` : '',
-            }),
-        });
-        const initiateData = await initiateRes.json();
-        if (!initiateRes.ok || !initiateData.success) {
-            throw new Error(initiateData.message || 'Failed to initiate PhonePe payment');
-        }
-
-        // 2. Store pending order data in sessionStorage for the return callback
-        sessionStorage.setItem('pendingPhonePeOrder', JSON.stringify({
-            orderPayload,
-            transactionId: initiateData.transactionId,
-        }));
-
-        // 3. Redirect to PhonePe payment page
-        window.location.href = initiateData.redirectUrl;
-    }
-
-    // ─── Cashfree Flow ───
-    async function processCashfree(orderPayload) {
-        // 1. Create order on backend
-        const createRes = await fetch(API_ENDPOINTS.CASHFREE_CREATE_ORDER, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                amount: finalTotal,
-                customerName: contactInfo.name,
-                customerEmail: contactInfo.email,
-                customerPhone: contactInfo.phone ? `${contactInfo.countryCode}${contactInfo.phone}` : '9999999999',
-                customerId: authCtx.user?.userId,
-            }),
-        });
-        const createData = await createRes.json();
-        if (!createRes.ok) throw new Error(createData.message || 'Failed to create Cashfree order');
-
-        // 2. Open Cashfree Drop checkout
-        return new Promise((resolve, reject) => {
-            if (!window.Cashfree) {
-                setPaymentProcessing(false);
-                reject(new Error('Cashfree SDK not loaded. Please refresh and try again.'));
-                return;
-            }
-
-            const cashfree = window.Cashfree({
-                mode: paymentConfig?.cashfree?.env === 'production' ? 'production' : 'sandbox',
-            });
-
-            cashfree.checkout({
-                paymentSessionId: createData.paymentSessionId,
-                redirectTarget: '_modal',
-            }).then(async (result) => {
-                if (result.error) {
-                    setPaymentProcessing(false);
-                    reject(new Error(result.error.message || 'Cashfree payment failed'));
-                    return;
-                }
-                if (result.paymentDetails) {
-                    // 3. Verify on backend
-                    try {
-                        const statusRes = await fetch(`${API_ENDPOINTS.CASHFREE_STATUS}/${createData.orderId}`);
-                        const statusData = await statusRes.json();
-                        if (statusData.order_status === 'PAID') {
-                            orderPayload.order.paymentId = createData.orderId;
-                            orderPayload.order.paymentStatus = 'paid';
-                            await sendRequest(JSON.stringify(orderPayload));
-                            setPaymentProcessing(false);
-                            resolve();
-                        } else {
-                            setPaymentProcessing(false);
-                            reject(new Error('Payment not confirmed. Status: ' + statusData.order_status));
-                        }
-                    } catch (err) {
-                        setPaymentProcessing(false);
-                        reject(err);
-                    }
-                }
-            }).catch((err) => {
-                setPaymentProcessing(false);
-                reject(new Error(err.message || 'Cashfree checkout error'));
-            });
-        });
+        sendRequest(JSON.stringify(orderPayload));
     }
 
     // Success view
     if (data && !error) {
-        const paymentName = PAYMENT_METHODS.find(p => p.id === selectedPayment)?.name || selectedPayment;
         return (
             <Modal open={userProgressCtx.progress === 'checkout'} onClose={handleFinish}>
                 <div className="checkout-container">
@@ -533,7 +275,6 @@ export default function Checkout() {
                         <div className="success-icon">✅</div>
                         <h2>Order Placed!</h2>
                         <p>Your order has been placed successfully.</p>
-                        <p className="success-hint">Payment processed via <strong>{paymentName}</strong></p>
                         <p className="success-hint">We'll send a confirmation to <strong>{contactInfo.email}</strong></p>
                         <button className="checkout-done-btn" onClick={handleFinish}>Done</button>
                     </div>
@@ -758,7 +499,6 @@ export default function Checkout() {
                     </div>
 
                     {error && <Error title="Failed to submit order" message={error} />}
-                    {paymentError && <Error title="Payment Failed" message={paymentError} />}
 
                     {/* ═══ Promo Code ═══ */}
                     <div className="checkout-section checkout-promo-section">
@@ -802,43 +542,12 @@ export default function Checkout() {
                         )}
                     </div>
 
-                    {/* ═══ Payment Method ═══ */}
-                    <div className="checkout-section checkout-payment-section">
-                        <h3>💳 Payment Method</h3>
-                        <div className="payment-methods">
-                            {PAYMENT_METHODS.map(method => (
-                                <label
-                                    key={method.id}
-                                    className={`payment-card${selectedPayment === method.id ? ' payment-selected' : ''}`}
-                                >
-                                    <input
-                                        type="radio"
-                                        name="paymentMethod"
-                                        value={method.id}
-                                        checked={selectedPayment === method.id}
-                                        onChange={() => setSelectedPayment(method.id)}
-                                    />
-                                    <div className="payment-card-icon">{method.icon}</div>
-                                    <div className="payment-card-info">
-                                        <span className="payment-card-name">{method.name}</span>
-                                        <span className="payment-card-desc">{method.desc}</span>
-                                    </div>
-                                    {selectedPayment === method.id && <span className="payment-check">✓</span>}
-                                </label>
-                            ))}
-                        </div>
-                        <p className="payment-secure-note">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                            All transactions are secured with 256-bit encryption
-                        </p>
-                    </div>
-
                     <div className="checkout-footer">
                         <button type="button" className="checkout-back-btn" onClick={handleClose}>
                             ← Back to Cart
                         </button>
-                        <button type="submit" className="checkout-pay-btn" disabled={isLoading || paymentProcessing}>
-                            {paymentProcessing ? 'Processing Payment...' : isLoading ? 'Placing Order...' : `Pay ${currencyFormatter.format(finalTotal)} • ${PAYMENT_METHODS.find(p => p.id === selectedPayment)?.name}`}
+                        <button type="submit" className="checkout-pay-btn" disabled={isLoading}>
+                            {isLoading ? 'Placing Order...' : `Place Order • ${currencyFormatter.format(finalTotal)}`}
                         </button>
                     </div>
                 </form>

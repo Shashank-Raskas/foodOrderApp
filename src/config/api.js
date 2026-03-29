@@ -50,15 +50,6 @@ export const API_ENDPOINTS = {
   OTP_VERIFY: `${API_URL}/api/otp/verify`,
   USER_ADDRESSES: `${API_URL}/api/user/addresses`,
   USER_CONTACT: `${API_URL}/api/user/contact`,
-
-  // Payment Gateways
-  PAYMENT_CONFIG: `${API_URL}/api/payment/config`,
-  RAZORPAY_CREATE_ORDER: `${API_URL}/api/payment/razorpay/create-order`,
-  RAZORPAY_VERIFY: `${API_URL}/api/payment/razorpay/verify`,
-  PHONEPE_INITIATE: `${API_URL}/api/payment/phonepe/initiate`,
-  PHONEPE_STATUS: `${API_URL}/api/payment/phonepe/status`,
-  CASHFREE_CREATE_ORDER: `${API_URL}/api/payment/cashfree/create-order`,
-  CASHFREE_STATUS: `${API_URL}/api/payment/cashfree/status`,
 };
 
 // Export for debugging

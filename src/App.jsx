@@ -17,7 +17,6 @@ import PrivacyPolicy from "./components/PrivacyPolicy";
 import TermsConditions from "./components/TermsConditions";
 import RefundPolicy from "./components/RefundPolicy";
 import FAQs from "./components/FAQs";
-import PhonePeCallback from "./components/PhonePeCallback";
 import ScrollToTop from "./components/UI/ScrollToTop";
 import ProtectedRoute from "./components/UI/ProtectedRoute";
 import { CartContextProvider } from "./components/store/CartContext";
@@ -69,8 +68,6 @@ function AppContent() {
         <Route path="/terms" element={<TermsConditions />} />
         <Route path="/refund-policy" element={<RefundPolicy />} />
         <Route path="/faqs" element={<FAQs />} />
-        <Route path="/payment/phonepe/callback" element={<PhonePeCallback />} />
-        <Route path="/payment/cashfree/callback" element={<PhonePeCallback />} />
         <Route path="/favorites" element={
           <ProtectedRoute><Favorites /></ProtectedRoute>
         } />
