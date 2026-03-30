@@ -60,6 +60,7 @@ function AppContent() {
     <>
       <ScrollToTop />
       <Header />
+      
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/menu" element={<Meals />} />
