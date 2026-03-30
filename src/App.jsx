@@ -27,6 +27,7 @@ import { SearchContextProvider } from "./components/store/SearchContext";
 import AuthContext from "./components/store/AuthContext";
 
 
+
 function ScrollToTopButton() {
   const [visible, setVisible] = useState(false);
 
