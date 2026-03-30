@@ -283,6 +283,7 @@ export default function Checkout() {
         );
     }
 
+    
     return (
         <Modal open={userProgressCtx.progress === 'checkout'} onClose={handleClose}>
             <div className="checkout-container">
