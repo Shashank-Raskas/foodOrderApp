@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import db from './firebase.js';
 import { generateOtp, storeOtp, verifyOtp, checkRateLimit, cleanupOtp } from './services/otpService.js';
-import { sendOtpEmail, isEmailConfigured } from './services/emailService.js';
+import { sendOtpEmail, isEmailConfigured, sendOrderConfirmationEmail } from './services/emailService.js';
 import { sendOtpSms, isSmsConfigured } from './services/smsService.js';
 
 // Load environment variables
@@ -487,6 +487,13 @@ app.post('/api/orders', async (req, res) => {
   try {
     await db.collection('orders').add(newOrder);
     res.status(201).json({ message: 'Order created!' });
+
+    // Send order confirmation email — non-blocking, won't fail the order
+    if (isEmailConfigured()) {
+      sendOrderConfirmationEmail(customer.email, newOrder).catch(err =>
+        console.error('[Email] Order confirmation failed:', err.message)
+      );
+    }
   } catch (err) {
     console.error('Failed to save to Firebase:', err);
     res.status(500).json({ message: 'Failed to save order.' });

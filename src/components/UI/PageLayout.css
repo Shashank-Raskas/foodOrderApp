@@ -58,6 +58,20 @@
     overflow: hidden;
 }
 
+/* Dark-theme pages (About Us, Contact Us) need their own dark background */
+.about-us-page .page-content,
+.contact-us-page .page-content {
+    background: linear-gradient(160deg, #1a1608 0%, #231b09 60%, #1e1b10 100%);
+    padding: 2rem 2.5rem;
+}
+
+@media (max-width: 600px) {
+    .about-us-page .page-content,
+    .contact-us-page .page-content {
+        padding: 1.5rem 1rem;
+    }
+}
+
 /* Page view override: remove max-height constraint from modal styles */
 .page-view {
     max-height: none !important;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useRef } from 'react';
+import { useState, useEffect, useContext, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useHttp from '../hooks/useHttp';
 import { API_URL, API_ENDPOINTS } from '../config/api';
@@ -7,6 +7,7 @@ import AuthContext from './store/AuthContext';
 import UserProgressContext from './store/UserProgressContext';
 import CartContext from './store/CartContext';
 import './LandingPage.css';
+import useThrottle from '../hooks/useThrottle';
 
 const requestConfig = {};
 
@@ -152,11 +153,12 @@ export default function LandingPage() {
 
   /* ── parallax on hero ── */
   const [scrollY, setScrollY] = useState(0);
+  const scrollCb = useCallback(() => setScrollY(window.scrollY), []);
+  const throttledScroll = useThrottle(scrollCb, 50);
   useEffect(() => {
-    const onScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+    window.addEventListener('scroll', throttledScroll, { passive: true });
+    return () => window.removeEventListener('scroll', throttledScroll);
+  }, [throttledScroll]);
 
   return (
     <div className="landing">
