@@ -60,7 +60,6 @@ function AppContent() {
     <>
       <ScrollToTop />
       <Header />
-      
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/menu" element={<Meals />} />
@@ -80,6 +79,8 @@ function AppContent() {
         <Route path="/profile" element={
           <ProtectedRoute><UserProfile /></ProtectedRoute>
         } />
+        {/* Catch-all 404 route */}
+        <Route path="*" element={<Error title="404 Not Found" message="Sorry, the page you requested does not exist." />} />
       </Routes>
       {/* Global modals — always available regardless of route */}
       <AuthModal />
