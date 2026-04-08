@@ -50,6 +50,8 @@ export const API_ENDPOINTS = {
   OTP_VERIFY: `${API_URL}/api/otp/verify`,
   USER_ADDRESSES: `${API_URL}/api/user/addresses`,
   USER_CONTACT: `${API_URL}/api/user/contact`,
+  ADMIN_ORDERS: `${API_URL}/api/admin/orders`,
+  ADMIN_USERS: `${API_URL}/api/admin/users`,
 };
 
 // Export for debugging

@@ -544,6 +544,53 @@ app.get('/api/user/orders', async (req, res) => {
 });
 
 
+// ===================== Admin Endpoints =====================
+const ADMIN_EMAIL = 'flavoralchemist9@gmail.com';
+
+// Get ALL orders (admin only)
+app.get('/api/admin/orders', async (req, res) => {
+  const { adminEmail } = req.query;
+  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
+    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
+  }
+
+  try {
+    const snapshot = await db.collection('orders').get();
+    const orders = [];
+    snapshot.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
+    orders.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    const totalRevenue = orders.reduce((sum, o) => sum + parseFloat(o.totalPrice || 0), 0);
+    res.json({ orders, count: orders.length, totalRevenue: totalRevenue.toFixed(2) });
+  } catch (err) {
+    console.error('[Admin] Failed to fetch all orders:', err);
+    res.status(500).json({ message: 'Failed to fetch orders.' });
+  }
+});
+
+// Get ALL users (admin only)
+app.get('/api/admin/users', async (req, res) => {
+  const { adminEmail } = req.query;
+  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
+    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
+  }
+
+  try {
+    const snapshot = await db.collection('users').get();
+    const users = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      // Never expose passwords
+      const { password, ...safeData } = data;
+      users.push({ id: doc.id, ...safeData });
+    });
+    users.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    res.json({ users, count: users.length });
+  } catch (err) {
+    console.error('[Admin] Failed to fetch users:', err);
+    res.status(500).json({ message: 'Failed to fetch users.' });
+  }
+});
+
 // ===================== User Addresses =====================
 
 // Get user addresses

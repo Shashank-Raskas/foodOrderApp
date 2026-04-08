@@ -1,9 +1,12 @@
 import { createContext, useState, useEffect } from "react";
 import { API_ENDPOINTS } from "../../config/api";
 
+const ADMIN_EMAIL = 'flavoralchemist9@gmail.com';
+
 const AuthContext = createContext({
     user: null,
     isLoggedIn: false,
+    isAdmin: false,
     login: () => {},
     signup: () => {},
     logout: () => {},
@@ -176,6 +179,7 @@ export function AuthContextProvider({ children }) {
     const authCtx = {
         user,
         isLoggedIn: user !== null,
+        isAdmin: user?.email?.toLowerCase() === ADMIN_EMAIL,
         login,
         signup,
         logout,

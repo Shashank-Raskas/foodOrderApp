@@ -17,6 +17,7 @@ import PrivacyPolicy from "./components/PrivacyPolicy";
 import TermsConditions from "./components/TermsConditions";
 import RefundPolicy from "./components/RefundPolicy";
 import FAQs from "./components/FAQs";
+import AdminDashboard from "./components/AdminDashboard";
 import ScrollToTop from "./components/UI/ScrollToTop";
 import ProtectedRoute from "./components/UI/ProtectedRoute";
 import { CartContextProvider } from "./components/store/CartContext";
@@ -78,6 +79,9 @@ function AppContent() {
         } />
         <Route path="/profile" element={
           <ProtectedRoute><UserProfile /></ProtectedRoute>
+        } />
+        <Route path="/admin" element={
+          <ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>
         } />
         {/* Catch-all 404 route */}
         <Route path="*" element={<Error title="404 Not Found" message="Sorry, the page you requested does not exist." />} />

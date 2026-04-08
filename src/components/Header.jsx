@@ -166,6 +166,14 @@ export default function Header() {
                                     <button className="dropdown-item" onClick={() => handleMenuAction(() => navigate('/orders'))}>
                                         <span>📦</span> My Orders
                                     </button>
+                                    {authCtx.isAdmin && (
+                                        <>
+                                            <hr className="dropdown-divider" />
+                                            <button className="dropdown-item dropdown-admin" onClick={() => handleMenuAction(() => navigate('/admin'))}>
+                                                <span>⚙️</span> Admin Dashboard
+                                            </button>
+                                        </>
+                                    )}
                                     <hr className="dropdown-divider" />
                                     <button className="dropdown-item dropdown-logout" onClick={() => handleMenuAction(handleLogout)}>
                                         <span>🚪</span> Logout

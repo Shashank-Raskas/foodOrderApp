@@ -424,6 +424,15 @@ body {
   color: #ff8787 !important;
 }
 
+.dropdown-admin {
+  color: #ffc404;
+}
+
+.dropdown-admin:hover {
+  background: rgba(255, 196, 4, 0.12) !important;
+  color: #ffe066 !important;
+}
+
 h1 {
   font-family: 'Lato', sans-serif;
   font-weight: 700;
@@ -3177,7 +3186,7 @@ h1 {
 }
 .about-values-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: 1.25rem;
   margin-top: 1rem;
 }
@@ -3263,7 +3272,7 @@ h1 {
 }
 .contact-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: 1.25rem;
   margin-bottom: 2.5rem;
 }
@@ -3415,6 +3424,39 @@ h1 {
 @media (max-width: 600px) {
   .contact-form-row {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile fixes for About Us & Contact Us */
+@media (max-width: 480px) {
+  .about-us-page .about-hero-section h2 {
+    font-size: 1.4rem;
+  }
+  .about-us-page .about-lead {
+    font-size: 1rem;
+  }
+  .about-values-grid {
+    grid-template-columns: 1fr;
+  }
+  .about-numbers-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .about-value-card {
+    padding: 1rem;
+  }
+  .contact-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .contact-card {
+    padding: 1.25rem;
+  }
+  .contact-submit-btn {
+    width: 100%;
+    text-align: center;
+  }
+  .about-us-page h3,
+  .contact-us-page h3 {
+    font-size: 1.1rem;
   }
 }
 
