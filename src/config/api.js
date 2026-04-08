@@ -50,8 +50,14 @@ export const API_ENDPOINTS = {
   OTP_VERIFY: `${API_URL}/api/otp/verify`,
   USER_ADDRESSES: `${API_URL}/api/user/addresses`,
   USER_CONTACT: `${API_URL}/api/user/contact`,
+  USER_LOYALTY: `${API_URL}/api/user/loyalty`,
+  USER_LOYALTY_REDEEM: `${API_URL}/api/user/loyalty/redeem`,
   ADMIN_ORDERS: `${API_URL}/api/admin/orders`,
   ADMIN_USERS: `${API_URL}/api/admin/users`,
+  ADMIN_COUPONS: `${API_URL}/api/admin/coupons`,
+  ADMIN_MEALS: `${API_URL}/api/admin/meals`,
+  COUPON_VALIDATE: `${API_URL}/api/coupons/validate`,
+  MEAL_REVIEWS: (mealId) => `${API_URL}/api/meals/${mealId}/reviews`,
 };
 
 // Export for debugging

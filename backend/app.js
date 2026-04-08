@@ -486,6 +486,31 @@ app.post('/api/orders', async (req, res) => {
 
   try {
     await db.collection('orders').add(newOrder);
+
+    // Award loyalty points: 1 point per ₹10 spent
+    if (userId) {
+      const pointsEarned = Math.floor(parseFloat(newOrder.total || newOrder.items.reduce((s, i) => s + i.price * i.quantity, 0)) / 10);
+      if (pointsEarned > 0) {
+        const loyaltyRef = db.collection('loyalty').doc(userId);
+        const loyaltyDoc = await loyaltyRef.get();
+        const current = loyaltyDoc.exists ? loyaltyDoc.data() : { points: 0, history: [] };
+        const historyEntry = { type: 'earned', points: pointsEarned, orderId: newOrder.id, date: new Date().toISOString() };
+        await loyaltyRef.set({
+          points: (current.points || 0) + pointsEarned,
+          history: [...(current.history || []).slice(-49), historyEntry],
+        });
+      }
+    }
+
+    // Increment coupon usage if a promo code was applied
+    if (orderData.promoCode) {
+      const couponSnap = await db.collection('coupons').where('code', '==', orderData.promoCode.toUpperCase()).limit(1).get();
+      if (!couponSnap.empty) {
+        const couponDoc = couponSnap.docs[0];
+        await couponDoc.ref.update({ usedCount: (couponDoc.data().usedCount || 0) + 1 });
+      }
+    }
+
     res.status(201).json({ message: 'Order created!' });
 
     // Send order confirmation email — non-blocking, won't fail the order
@@ -588,6 +613,328 @@ app.get('/api/admin/users', async (req, res) => {
   } catch (err) {
     console.error('[Admin] Failed to fetch users:', err);
     res.status(500).json({ message: 'Failed to fetch users.' });
+  }
+});
+
+// ===================== Loyalty Points =====================
+
+// Get user loyalty points
+app.get('/api/user/loyalty', async (req, res) => {
+  const { userId } = req.query;
+  if (!userId) return res.status(400).json({ message: 'User ID is required.' });
+
+  try {
+    const doc = await db.collection('loyalty').doc(userId).get();
+    if (!doc.exists) {
+      return res.json({ points: 0, history: [] });
+    }
+    const data = doc.data();
+    res.json({ points: data.points || 0, history: data.history || [] });
+  } catch (err) {
+    console.error('[Loyalty] Fetch error:', err);
+    res.status(500).json({ message: 'Failed to fetch loyalty points.' });
+  }
+});
+
+// Redeem loyalty points
+app.post('/api/user/loyalty/redeem', async (req, res) => {
+  const { userId, points } = req.body;
+  if (!userId) return res.status(400).json({ message: 'User ID is required.' });
+  if (!points || points < 50) return res.status(400).json({ message: 'Minimum 50 points required to redeem.' });
+
+  try {
+    const loyaltyRef = db.collection('loyalty').doc(userId);
+    const doc = await loyaltyRef.get();
+    if (!doc.exists || (doc.data().points || 0) < points) {
+      return res.status(400).json({ message: 'Not enough points.' });
+    }
+    const current = doc.data();
+    const discount = Math.floor(points / 10); // 10 points = ₹1
+    const historyEntry = { type: 'redeemed', points: -points, discount, date: new Date().toISOString() };
+    await loyaltyRef.update({
+      points: current.points - points,
+      history: [...(current.history || []).slice(-49), historyEntry],
+    });
+    res.json({ message: 'Points redeemed!', discount, remainingPoints: current.points - points });
+  } catch (err) {
+    console.error('[Loyalty] Redeem error:', err);
+    res.status(500).json({ message: 'Failed to redeem points.' });
+  }
+});
+
+// ===================== Coupon/Promo Management (Admin) =====================
+
+// Get all coupons
+app.get('/api/admin/coupons', async (req, res) => {
+  const { adminEmail } = req.query;
+  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
+    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
+  }
+  try {
+    const snapshot = await db.collection('coupons').get();
+    const coupons = [];
+    snapshot.forEach(doc => coupons.push({ id: doc.id, ...doc.data() }));
+    coupons.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    res.json({ coupons });
+  } catch (err) {
+    console.error('[Coupons] Fetch error:', err);
+    res.status(500).json({ message: 'Failed to fetch coupons.' });
+  }
+});
+
+// Create coupon
+app.post('/api/admin/coupons', async (req, res) => {
+  const { adminEmail, coupon } = req.body;
+  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
+    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
+  }
+  if (!coupon || !coupon.code || !coupon.type || coupon.value === undefined) {
+    return res.status(400).json({ message: 'Code, type, and value are required.' });
+  }
+
+  try {
+    // Check for duplicate code
+    const existing = await db.collection('coupons').where('code', '==', coupon.code.toUpperCase()).limit(1).get();
+    if (!existing.empty) {
+      return res.status(400).json({ message: 'A coupon with this code already exists.' });
+    }
+    const data = {
+      code: coupon.code.toUpperCase().trim(),
+      type: coupon.type, // 'percent' or 'flat'
+      value: Number(coupon.value),
+      maxDiscount: Number(coupon.maxDiscount) || 0,
+      minOrder: Number(coupon.minOrder) || 0,
+      maxUses: Number(coupon.maxUses) || 0, // 0 = unlimited
+      usedCount: 0,
+      active: true,
+      createdAt: new Date().toISOString(),
+    };
+    const ref = await db.collection('coupons').add(data);
+    res.status(201).json({ message: 'Coupon created!', coupon: { id: ref.id, ...data } });
+  } catch (err) {
+    console.error('[Coupons] Create error:', err);
+    res.status(500).json({ message: 'Failed to create coupon.' });
+  }
+});
+
+// Toggle coupon active status
+app.put('/api/admin/coupons/:id', async (req, res) => {
+  const { adminEmail, active } = req.body;
+  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
+    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
+  }
+  try {
+    await db.collection('coupons').doc(req.params.id).update({ active: !!active });
+    res.json({ message: 'Coupon updated!' });
+  } catch (err) {
+    console.error('[Coupons] Update error:', err);
+    res.status(500).json({ message: 'Failed to update coupon.' });
+  }
+});
+
+// Delete coupon
+app.delete('/api/admin/coupons/:id', async (req, res) => {
+  const { adminEmail } = req.query;
+  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
+    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
+  }
+  try {
+    await db.collection('coupons').doc(req.params.id).delete();
+    res.json({ message: 'Coupon deleted!' });
+  } catch (err) {
+    console.error('[Coupons] Delete error:', err);
+    res.status(500).json({ message: 'Failed to delete coupon.' });
+  }
+});
+
+// Validate coupon (user-facing)
+app.post('/api/coupons/validate', async (req, res) => {
+  const { code, cartTotal } = req.body;
+  if (!code) return res.status(400).json({ message: 'Promo code is required.' });
+
+  try {
+    const snapshot = await db.collection('coupons').where('code', '==', code.toUpperCase().trim()).limit(1).get();
+    if (snapshot.empty) {
+      return res.status(404).json({ message: 'Invalid promo code.' });
+    }
+    const doc = snapshot.docs[0];
+    const coupon = doc.data();
+
+    if (!coupon.active) {
+      return res.status(400).json({ message: 'This promo code is no longer active.' });
+    }
+    if (coupon.maxUses > 0 && coupon.usedCount >= coupon.maxUses) {
+      return res.status(400).json({ message: 'This promo code has been fully redeemed.' });
+    }
+    if (coupon.minOrder > 0 && cartTotal < coupon.minOrder) {
+      return res.status(400).json({ message: `Minimum order of ₹${coupon.minOrder} required.` });
+    }
+
+    let discount = 0;
+    if (coupon.type === 'percent') {
+      discount = Math.min((cartTotal * coupon.value) / 100, coupon.maxDiscount || Infinity);
+    } else {
+      discount = coupon.value;
+    }
+
+    res.json({
+      valid: true,
+      code: coupon.code,
+      type: coupon.type,
+      value: coupon.value,
+      maxDiscount: coupon.maxDiscount,
+      discount: Math.round(discount * 100) / 100,
+    });
+  } catch (err) {
+    console.error('[Coupons] Validate error:', err);
+    res.status(500).json({ message: 'Failed to validate coupon.' });
+  }
+});
+
+// ===================== Meal Management (Admin) =====================
+
+// Get meals from Firebase (admin view)
+app.get('/api/admin/meals', async (req, res) => {
+  const { adminEmail } = req.query;
+  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
+    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
+  }
+  try {
+    // Read from JSON file (source of truth)
+    const meals = JSON.parse(await fs.readFile('./data/available-meals.json', 'utf8'));
+    res.json({ meals });
+  } catch (err) {
+    console.error('[Meals Admin] Fetch error:', err);
+    res.status(500).json({ message: 'Failed to fetch meals.' });
+  }
+});
+
+// Add meal
+app.post('/api/admin/meals', async (req, res) => {
+  const { adminEmail, meal } = req.body;
+  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
+    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
+  }
+  if (!meal || !meal.name || !meal.price) {
+    return res.status(400).json({ message: 'Name and price are required.' });
+  }
+  try {
+    const meals = JSON.parse(await fs.readFile('./data/available-meals.json', 'utf8'));
+    const newMeal = {
+      id: `m${Date.now()}`,
+      name: meal.name.trim(),
+      price: String(meal.price),
+      description: meal.description || '',
+      image: meal.image || 'images/default-meal.jpg',
+      category: meal.category || 'entrees',
+      dietary: meal.dietary || [],
+      spiceLevel: meal.spiceLevel || 'mild',
+      protein: meal.protein || 'vegetarian',
+      servingSize: meal.servingSize || 'individual',
+      isChefSpecial: meal.isChefSpecial || false,
+      availableTime: meal.availableTime || 'all-day',
+    };
+    meals.push(newMeal);
+    await fs.writeFile('./data/available-meals.json', JSON.stringify(meals, null, 2));
+    res.status(201).json({ message: 'Meal added!', meal: newMeal });
+  } catch (err) {
+    console.error('[Meals Admin] Add error:', err);
+    res.status(500).json({ message: 'Failed to add meal.' });
+  }
+});
+
+// Update meal
+app.put('/api/admin/meals/:id', async (req, res) => {
+  const { adminEmail, meal } = req.body;
+  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
+    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
+  }
+  try {
+    const meals = JSON.parse(await fs.readFile('./data/available-meals.json', 'utf8'));
+    const idx = meals.findIndex(m => m.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ message: 'Meal not found.' });
+
+    meals[idx] = { ...meals[idx], ...meal, id: req.params.id, price: String(meal.price || meals[idx].price) };
+    await fs.writeFile('./data/available-meals.json', JSON.stringify(meals, null, 2));
+    res.json({ message: 'Meal updated!', meal: meals[idx] });
+  } catch (err) {
+    console.error('[Meals Admin] Update error:', err);
+    res.status(500).json({ message: 'Failed to update meal.' });
+  }
+});
+
+// Delete meal
+app.delete('/api/admin/meals/:id', async (req, res) => {
+  const { adminEmail } = req.query;
+  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
+    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
+  }
+  try {
+    const meals = JSON.parse(await fs.readFile('./data/available-meals.json', 'utf8'));
+    const filtered = meals.filter(m => m.id !== req.params.id);
+    if (filtered.length === meals.length) return res.status(404).json({ message: 'Meal not found.' });
+    await fs.writeFile('./data/available-meals.json', JSON.stringify(filtered, null, 2));
+    res.json({ message: 'Meal deleted!' });
+  } catch (err) {
+    console.error('[Meals Admin] Delete error:', err);
+    res.status(500).json({ message: 'Failed to delete meal.' });
+  }
+});
+
+// ===================== Ratings & Reviews =====================
+
+// Get reviews for a meal
+app.get('/api/meals/:id/reviews', async (req, res) => {
+  try {
+    const snapshot = await db.collection('reviews').where('mealId', '==', req.params.id).get();
+    const reviews = [];
+    snapshot.forEach(doc => reviews.push({ id: doc.id, ...doc.data() }));
+    reviews.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+    const totalRating = reviews.reduce((sum, r) => sum + (r.rating || 0), 0);
+    const avgRating = reviews.length > 0 ? Math.round((totalRating / reviews.length) * 10) / 10 : 0;
+
+    res.json({ reviews, count: reviews.length, avgRating });
+  } catch (err) {
+    console.error('[Reviews] Fetch error:', err);
+    res.status(500).json({ message: 'Failed to fetch reviews.' });
+  }
+});
+
+// Submit a review
+app.post('/api/meals/:id/reviews', async (req, res) => {
+  const { userId, userName, rating, comment } = req.body;
+  if (!userId) return res.status(400).json({ message: 'User ID is required.' });
+  if (!rating || rating < 1 || rating > 5) return res.status(400).json({ message: 'Rating must be between 1 and 5.' });
+
+  try {
+    // Check if user already reviewed this meal
+    const existing = await db.collection('reviews')
+      .where('mealId', '==', req.params.id)
+      .where('userId', '==', userId)
+      .limit(1).get();
+
+    if (!existing.empty) {
+      // Update existing review
+      const doc = existing.docs[0];
+      await doc.ref.update({ rating: Number(rating), comment: (comment || '').trim(), updatedAt: new Date().toISOString() });
+      return res.json({ message: 'Review updated!', review: { id: doc.id, ...doc.data(), rating: Number(rating), comment: (comment || '').trim() } });
+    }
+
+    const reviewData = {
+      mealId: req.params.id,
+      userId,
+      userName: userName || 'Anonymous',
+      rating: Number(rating),
+      comment: (comment || '').trim(),
+      createdAt: new Date().toISOString(),
+    };
+
+    const ref = await db.collection('reviews').add(reviewData);
+    res.status(201).json({ message: 'Review submitted!', review: { id: ref.id, ...reviewData } });
+  } catch (err) {
+    console.error('[Reviews] Submit error:', err);
+    res.status(500).json({ message: 'Failed to submit review.' });
   }
 });
 

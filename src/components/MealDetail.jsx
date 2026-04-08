@@ -72,6 +72,16 @@ export default function MealDetail() {
     const [loading, setLoading] = useState(!meal);
     const [error, setError] = useState(null);
 
+    // Reviews state
+    const [reviews, setReviews] = useState([]);
+    const [avgRating, setAvgRating] = useState(0);
+    const [reviewCount, setReviewCount] = useState(0);
+    const [userRating, setUserRating] = useState(0);
+    const [userComment, setUserComment] = useState('');
+    const [hoverRating, setHoverRating] = useState(0);
+    const [submittingReview, setSubmittingReview] = useState(false);
+    const [reviewMsg, setReviewMsg] = useState('');
+
     // If no meal in route state, fetch all meals and find by ID
     useEffect(() => {
         if (!meal && mealId) {
@@ -90,6 +100,59 @@ export default function MealDetail() {
                 .finally(() => setLoading(false));
         }
     }, [mealId, meal]);
+
+    // Fetch reviews
+    useEffect(() => {
+        const id = meal?.id || mealId;
+        if (!id) return;
+        fetch(API_ENDPOINTS.MEAL_REVIEWS(id))
+            .then(r => r.json())
+            .then(data => {
+                setReviews(data.reviews || []);
+                setAvgRating(data.avgRating || 0);
+                setReviewCount(data.count || 0);
+            })
+            .catch(() => {});
+    }, [meal?.id, mealId]);
+
+    async function handleSubmitReview() {
+        if (!authCtx.isLoggedIn) {
+            userProgressCtx.showAuth('login');
+            return;
+        }
+        if (userRating === 0) return;
+        setSubmittingReview(true);
+        setReviewMsg('');
+        try {
+            const res = await fetch(API_ENDPOINTS.MEAL_REVIEWS(meal.id), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: authCtx.user.userId,
+                    userName: authCtx.user.name,
+                    rating: userRating,
+                    comment: userComment,
+                }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setReviewMsg('Review submitted!');
+                setUserComment('');
+                // Refresh reviews
+                const refreshRes = await fetch(API_ENDPOINTS.MEAL_REVIEWS(meal.id));
+                const refreshData = await refreshRes.json();
+                setReviews(refreshData.reviews || []);
+                setAvgRating(refreshData.avgRating || 0);
+                setReviewCount(refreshData.count || 0);
+            } else {
+                setReviewMsg(data.message || 'Failed to submit');
+            }
+        } catch {
+            setReviewMsg('Failed to submit review');
+        } finally {
+            setSubmittingReview(false);
+        }
+    }
 
     const itemInCart = useMemo(() =>
         authCtx.isLoggedIn && meal ? cartCtx.items.find(item => item.id === meal.id) : null,
@@ -265,6 +328,78 @@ export default function MealDetail() {
                                 </span>
                             </div>
                         )}
+                    </div>
+
+                    {/* ═══ Ratings & Reviews ═══ */}
+                    <div className="meal-reviews-section">
+                        <div className="reviews-header">
+                            <h3>Ratings & Reviews</h3>
+                            {reviewCount > 0 && (
+                                <div className="reviews-summary">
+                                    <span className="reviews-avg">{'★'.repeat(Math.round(avgRating))}{'☆'.repeat(5 - Math.round(avgRating))}</span>
+                                    <span className="reviews-avg-num">{avgRating}</span>
+                                    <span className="reviews-count">({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Write a review */}
+                        <div className="review-form">
+                            <p className="review-form-title">{authCtx.isLoggedIn ? 'Rate this meal' : 'Login to leave a review'}</p>
+                            <div className="star-rating-input">
+                                {[1, 2, 3, 4, 5].map(star => (
+                                    <button
+                                        key={star}
+                                        type="button"
+                                        className={`star-btn ${star <= (hoverRating || userRating) ? 'star-filled' : ''}`}
+                                        onMouseEnter={() => setHoverRating(star)}
+                                        onMouseLeave={() => setHoverRating(0)}
+                                        onClick={() => setUserRating(star)}
+                                    >
+                                        ★
+                                    </button>
+                                ))}
+                            </div>
+                            {userRating > 0 && (
+                                <>
+                                    <textarea
+                                        className="review-comment"
+                                        placeholder="Write a comment (optional)..."
+                                        value={userComment}
+                                        onChange={e => setUserComment(e.target.value)}
+                                        rows={3}
+                                        maxLength={500}
+                                    />
+                                    <button
+                                        className="review-submit-btn"
+                                        onClick={handleSubmitReview}
+                                        disabled={submittingReview}
+                                    >
+                                        {submittingReview ? 'Submitting...' : 'Submit Review'}
+                                    </button>
+                                </>
+                            )}
+                            {reviewMsg && <p className="review-msg">{reviewMsg}</p>}
+                        </div>
+
+                        {/* Reviews list */}
+                        {reviews.length > 0 && (
+                            <div className="reviews-list">
+                                {reviews.slice(0, 10).map(review => (
+                                    <div key={review.id} className="review-card">
+                                        <div className="review-card-header">
+                                            <span className="review-author">{review.userName}</span>
+                                            <span className="review-stars">{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</span>
+                                            <span className="review-date">
+                                                {new Date(review.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                            </span>
+                                        </div>
+                                        {review.comment && <p className="review-comment-text">{review.comment}</p>}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {reviews.length === 0 && <p className="no-reviews">No reviews yet — be the first!</p>}
                     </div>
                 </div>
             </div>

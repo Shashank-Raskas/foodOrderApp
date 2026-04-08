@@ -13,14 +13,6 @@ const requestConfig = {
     headers: { 'Content-Type': 'application/json' },
 };
 
-// Available promo codes
-const PROMO_CODES = {
-    WELCOME60: { type: 'percent', value: 60, maxDiscount: 250, minOrder: 0, label: '60% off up to ₹250 (New User)' },
-    FLAT100: { type: 'flat', value: 100, maxDiscount: 100, minOrder: 500, label: '₹100 off on orders above ₹500' },
-    TASTY20: { type: 'percent', value: 20, maxDiscount: 150, minOrder: 200, label: '20% off up to ₹150' },
-    FEAST50: { type: 'percent', value: 50, maxDiscount: 200, minOrder: 300, label: '50% off up to ₹200' },
-};
-
 export default function Checkout() {
     const cartCtx = useContext(CartContext);
     const userProgressCtx = useContext(UserProgressContext);
@@ -44,27 +36,25 @@ export default function Checkout() {
     const [formErrors, setFormErrors] = useState({});
     const [saveAddress, setSaveAddress] = useState(true);
 
-    // Promo code state
+    // Promo code state (now backend-validated)
     const [promoInput, setPromoInput] = useState('');
-    const [appliedPromo, setAppliedPromo] = useState(null);
+    const [appliedPromo, setAppliedPromo] = useState(null); // { code, type, value, maxDiscount, discount }
     const [promoError, setPromoError] = useState('');
+    const [promoLoading, setPromoLoading] = useState(false);
+
+    // Loyalty points state
+    const [loyaltyPoints, setLoyaltyPoints] = useState(0);
+    const [loyaltyDiscount, setLoyaltyDiscount] = useState(0);
+    const [redeemingPoints, setRedeemingPoints] = useState(false);
 
     const { data, error, isLoading, sendRequest, clearData } = useHttp(API_ENDPOINTS.ORDERS, requestConfig);
 
     const cartTotal = cartCtx.items.reduce((totalPrice, item) => totalPrice + item.quantity * item.price, 0);
     const totalItems = cartCtx.items.reduce((t, i) => t + i.quantity, 0);
 
-    // Calculate discount
-    let discount = 0;
-    if (appliedPromo) {
-        const promo = PROMO_CODES[appliedPromo];
-        if (promo.type === 'percent') {
-            discount = Math.min((cartTotal * promo.value) / 100, promo.maxDiscount);
-        } else {
-            discount = promo.value;
-        }
-    }
-    const finalTotal = Math.max(cartTotal - discount, 0);
+    // Calculate discount from promo
+    const promoDiscount = appliedPromo ? appliedPromo.discount : 0;
+    const finalTotal = Math.max(cartTotal - promoDiscount - loyaltyDiscount, 0);
 
     // Load user data and addresses when modal opens
     useEffect(() => {
@@ -85,6 +75,11 @@ export default function Checkout() {
                 countryCode: phoneCode,
             });
             fetchAddresses();
+            // Fetch loyalty points
+            fetch(`${API_ENDPOINTS.USER_LOYALTY}?userId=${authCtx.user.userId}`)
+                .then(r => r.json())
+                .then(data => setLoyaltyPoints(data.points || 0))
+                .catch(() => {});
         }
     }, [userProgressCtx.progress, authCtx.user]);
 
@@ -139,31 +134,59 @@ export default function Checkout() {
         setAppliedPromo(null);
         setPromoInput('');
         setPromoError('');
+        setLoyaltyDiscount(0);
     }
 
-    function handleApplyPromo() {
+    async function handleApplyPromo() {
         const code = promoInput.trim().toUpperCase();
         if (!code) {
             setPromoError('Please enter a promo code');
             return;
         }
-        const promo = PROMO_CODES[code];
-        if (!promo) {
-            setPromoError('Invalid promo code');
-            return;
-        }
-        if (promo.minOrder > 0 && cartTotal < promo.minOrder) {
-            setPromoError(`Minimum order of ${currencyFormatter.format(promo.minOrder)} required`);
-            return;
-        }
-        setAppliedPromo(code);
+        setPromoLoading(true);
         setPromoError('');
+        try {
+            const res = await fetch(API_ENDPOINTS.COUPON_VALIDATE, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, cartTotal }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setPromoError(data.message || 'Invalid promo code');
+                return;
+            }
+            setAppliedPromo(data);
+        } catch {
+            setPromoError('Failed to validate promo code');
+        } finally {
+            setPromoLoading(false);
+        }
     }
 
     function handleRemovePromo() {
         setAppliedPromo(null);
         setPromoInput('');
         setPromoError('');
+    }
+
+    async function handleRedeemPoints() {
+        if (loyaltyPoints < 50) return;
+        setRedeemingPoints(true);
+        try {
+            const pointsToRedeem = Math.min(loyaltyPoints, Math.floor(cartTotal * 10)); // Cap redemption at cart total
+            const res = await fetch(API_ENDPOINTS.USER_LOYALTY_REDEEM, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: authCtx.user.userId, points: pointsToRedeem }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setLoyaltyDiscount(data.discount);
+                setLoyaltyPoints(data.remainingPoints);
+            }
+        } catch { /* silent */ }
+        finally { setRedeemingPoints(false); }
     }
 
     function handleContactChange(e) {
@@ -255,8 +278,9 @@ export default function Checkout() {
                     'postal-code': orderAddress.postalCode || orderAddress['postal-code'],
                     city: orderAddress.city,
                 },
-                promoCode: appliedPromo || null,
-                discount: discount,
+                promoCode: appliedPromo?.code || null,
+                discount: promoDiscount,
+                loyaltyDiscount: loyaltyDiscount,
                 subtotal: cartTotal,
                 total: finalTotal,
             },
@@ -314,13 +338,19 @@ export default function Checkout() {
                         <span>Subtotal ({totalItems} items)</span>
                         <span className="checkout-total-amount">{currencyFormatter.format(cartTotal)}</span>
                     </div>
-                    {discount > 0 && (
+                    {promoDiscount > 0 && (
                         <div className="checkout-total-row checkout-discount-row">
-                            <span>Discount ({appliedPromo})</span>
-                            <span className="checkout-discount-amount">-{currencyFormatter.format(discount)}</span>
+                            <span>Discount ({appliedPromo?.code})</span>
+                            <span className="checkout-discount-amount">-{currencyFormatter.format(promoDiscount)}</span>
                         </div>
                     )}
-                    {discount > 0 && (
+                    {loyaltyDiscount > 0 && (
+                        <div className="checkout-total-row checkout-discount-row">
+                            <span>Loyalty Points</span>
+                            <span className="checkout-discount-amount">-{currencyFormatter.format(loyaltyDiscount)}</span>
+                        </div>
+                    )}
+                    {(promoDiscount > 0 || loyaltyDiscount > 0) && (
                         <div className="checkout-total-row checkout-final-row">
                             <span><strong>Total</strong></span>
                             <span className="checkout-total-amount"><strong>{currencyFormatter.format(finalTotal)}</strong></span>
@@ -507,9 +537,8 @@ export default function Checkout() {
                         {appliedPromo ? (
                             <div className="promo-applied">
                                 <div className="promo-applied-info">
-                                    <span className="promo-applied-code">{appliedPromo}</span>
-                                    <span className="promo-applied-label">{PROMO_CODES[appliedPromo].label}</span>
-                                    <span className="promo-applied-saving">You save {currencyFormatter.format(discount)}</span>
+                                    <span className="promo-applied-code">{appliedPromo.code}</span>
+                                    <span className="promo-applied-saving">You save {currencyFormatter.format(promoDiscount)}</span>
                                 </div>
                                 <button type="button" className="promo-remove-btn" onClick={handleRemovePromo}>Remove</button>
                             </div>
@@ -523,25 +552,34 @@ export default function Checkout() {
                                         onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(''); }}
                                         className="promo-input"
                                     />
-                                    <button type="button" className="promo-apply-btn" onClick={handleApplyPromo}>Apply</button>
+                                    <button type="button" className="promo-apply-btn" onClick={handleApplyPromo} disabled={promoLoading}>
+                                        {promoLoading ? '...' : 'Apply'}
+                                    </button>
                                 </div>
                                 {promoError && <span className="checkout-error promo-error">{promoError}</span>}
-                                <div className="promo-suggestions">
-                                    <span className="promo-suggestions-label">Available codes:</span>
-                                    {Object.entries(PROMO_CODES).map(([code, info]) => (
-                                        <button
-                                            key={code}
-                                            type="button"
-                                            className="promo-suggestion-chip"
-                                            onClick={() => { setPromoInput(code); }}
-                                        >
-                                            {code} <span className="promo-chip-info">— {info.label}</span>
-                                        </button>
-                                    ))}
-                                </div>
                             </>
                         )}
                     </div>
+
+                    {/* ═══ Loyalty Points ═══ */}
+                    {loyaltyPoints >= 50 && loyaltyDiscount === 0 && (
+                        <div className="checkout-section checkout-loyalty-section">
+                            <h3>⭐ Loyalty Points</h3>
+                            <div className="loyalty-info">
+                                <span>You have <strong>{loyaltyPoints}</strong> points (worth {currencyFormatter.format(Math.floor(loyaltyPoints / 10))})</span>
+                                <button type="button" className="loyalty-redeem-btn" onClick={handleRedeemPoints} disabled={redeemingPoints}>
+                                    {redeemingPoints ? 'Redeeming...' : 'Redeem'}
+                                </button>
+                            </div>
+                            <p className="loyalty-hint">10 points = ₹1 off. Min 50 points to redeem.</p>
+                        </div>
+                    )}
+                    {loyaltyDiscount > 0 && (
+                        <div className="checkout-section checkout-loyalty-section">
+                            <h3>⭐ Loyalty Points Applied</h3>
+                            <p className="loyalty-applied">-{currencyFormatter.format(loyaltyDiscount)} discount applied!</p>
+                        </div>
+                    )}
 
                     <div className="checkout-footer">
                         <button type="button" className="checkout-back-btn" onClick={handleClose}>
