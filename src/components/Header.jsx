@@ -109,17 +109,6 @@ export default function Header() {
                 )}
             </nav>
 
-            {/* Admin shortcut button in header bar (desktop, shown outside dropdown) */}
-            {authCtx.isAdmin && (
-                <button
-                    className={`header-admin-btn ${location.pathname === '/admin' ? 'header-admin-btn--active' : ''}`}
-                    onClick={() => navigate('/admin')}
-                    title="Admin Dashboard"
-                >
-                    ⚙️ Admin
-                </button>
-            )}
-
             {/* Search bar — only on menu page */}
             <div className={`header-search header-search-bar${!isMenuPage ? ' header-search-hidden' : ''}`}>
                 <div className="header-search-field">
