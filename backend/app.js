@@ -570,7 +570,7 @@ app.get('/api/user/orders', async (req, res) => {
 
 
 // ===================== Admin Endpoints =====================
-const ADMIN_EMAIL = 'flavoralchemist9@gmail.com';
+const ADMIN_EMAIL = 'flavor.alchemist9@gmail.com';
 
 // Get ALL orders (admin only)
 app.get('/api/admin/orders', async (req, res) => {

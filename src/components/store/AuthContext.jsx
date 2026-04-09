@@ -1,7 +1,7 @@
 import { createContext, useState, useEffect } from "react";
 import { API_ENDPOINTS } from "../../config/api";
 
-const ADMIN_EMAIL = 'flavoralchemist9@gmail.com';
+const ADMIN_EMAIL = 'flavor.alchemist9@gmail.com';
 
 const AuthContext = createContext({
     user: null,
