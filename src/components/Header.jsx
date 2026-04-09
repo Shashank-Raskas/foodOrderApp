@@ -98,7 +98,27 @@ export default function Header() {
                         {link.label}
                     </button>
                 ))}
+                {/* Admin link inside hamburger menu (mobile) */}
+                {authCtx.isAdmin && (
+                    <button
+                        className={`header-nav-link header-nav-admin-mobile ${location.pathname === '/admin' ? 'nav-active' : ''}`}
+                        onClick={() => handleMenuAction(() => navigate('/admin'))}
+                    >
+                        ⚙️ Admin Dashboard
+                    </button>
+                )}
             </nav>
+
+            {/* Admin shortcut button in header bar (desktop, shown outside dropdown) */}
+            {authCtx.isAdmin && (
+                <button
+                    className={`header-admin-btn ${location.pathname === '/admin' ? 'header-admin-btn--active' : ''}`}
+                    onClick={() => navigate('/admin')}
+                    title="Admin Dashboard"
+                >
+                    ⚙️ Admin
+                </button>
+            )}
 
             {/* Search bar — only on menu page */}
             <div className={`header-search header-search-bar${!isMenuPage ? ' header-search-hidden' : ''}`}>

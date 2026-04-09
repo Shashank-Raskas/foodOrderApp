@@ -10,7 +10,16 @@ export default function ProtectedRoute({ children, adminOnly = false }) {
     }
 
     if (adminOnly && !authCtx.isAdmin) {
-        return <Navigate to="/" replace />;
+        return (
+            <div style={{ textAlign: 'center', padding: '5rem 2rem', color: '#a09080' }}>
+                <p style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔒</p>
+                <h2 style={{ color: '#ffc404', marginBottom: '0.5rem' }}>Admin Access Required</h2>
+                <p>This page is only accessible to the admin account (<strong style={{ color: '#ffc404' }}>flavoralchemist9@gmail.com</strong>).</p>
+                <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
+                    You are currently logged in as: <strong style={{ color: '#d9e2f1' }}>{authCtx.user?.email}</strong>
+                </p>
+            </div>
+        );
     }
 
     return children;

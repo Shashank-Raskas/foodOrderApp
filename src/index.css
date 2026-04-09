@@ -2585,6 +2585,38 @@ h1 {
   transform: translateY(-1px);
 }
 
+/* Admin shortcut button in header bar */
+.header-admin-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 7px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: 'Lato', sans-serif;
+  background: rgba(255, 196, 4, 0.1);
+  border: 1.5px solid rgba(255, 196, 4, 0.4);
+  color: #ffc404;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.header-admin-btn:hover,
+.header-admin-btn--active {
+  background: rgba(255, 196, 4, 0.2);
+  border-color: #ffc404;
+  box-shadow: 0 0 10px rgba(255, 196, 4, 0.2);
+}
+
+/* Hide desktop admin btn on mobile — it's in the hamburger menu instead */
+@media (max-width: 850px) {
+  .header-admin-btn { display: none; }
+  .header-nav-admin-mobile { color: #ffc404 !important; font-weight: 700 !important; }
+}
+
 /* ==================== AUTH MODAL ==================== */
 .auth-modal-backdrop {
   position: fixed;
