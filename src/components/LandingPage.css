@@ -700,7 +700,8 @@
 }
 
 @media (max-width: 650px) {
-  .hero { min-height: 90vh; padding: 2rem 5%; }
+  /* Add top padding to offset the fixed header so hero-badge doesn't overlap it */
+  .hero { min-height: 90vh; padding: 80px 5% 2rem; }
   .hero-title { font-size: clamp(2rem, 8vw, 2.8rem); }
   .hero-sub { font-size: 1rem; }
 

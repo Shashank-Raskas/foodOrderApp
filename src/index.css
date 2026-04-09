@@ -136,11 +136,6 @@ body {
   font-family: 'Lato', sans-serif;
 }
 
-#main-header nav {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
 
 /* ==================== HEADER SEARCH BAR ==================== */
 .header-search {
@@ -3223,7 +3218,8 @@ h1 {
    HEADER RESPONSIVE (mobile nav)
    ═══════════════════════════════════════════════════════════════════ */
 @media (max-width: 850px) {
-  .header-main-nav {
+  /* Use #main-header prefix to beat the base .header-main-nav specificity */
+  #main-header .header-main-nav {
     display: none;
     flex-direction: column;
     position: absolute;
@@ -3232,18 +3228,21 @@ h1 {
     right: 0;
     background: rgba(44, 35, 6, 0.97);
     backdrop-filter: blur(12px);
-    padding: 1rem 0;
+    -webkit-backdrop-filter: blur(12px);
+    padding: 0.5rem 0 1rem;
     box-shadow: 0 8px 24px rgba(0,0,0,0.4);
     gap: 0;
+    z-index: 99;
   }
-  .header-main-nav.nav-open {
+  #main-header .header-main-nav.nav-open {
     display: flex;
   }
-  .header-main-nav .header-nav-link {
+  #main-header .header-main-nav .header-nav-link {
     padding: 12px 24px;
     width: 100%;
     text-align: left;
     border-radius: 0;
+    font-size: 1rem;
   }
   .mobile-hamburger {
     display: block;
