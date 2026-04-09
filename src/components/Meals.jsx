@@ -7,6 +7,7 @@ import useDebounce from "../hooks/useDebounce";
 import Error from "./Error";
 import { API_ENDPOINTS } from "../config/api";
 import SearchContext from "./store/SearchContext";
+import AuthContext from "./store/AuthContext";
 
 const requestConfig = {};
 const MEALS_PER_PAGE = 12;
@@ -25,6 +26,7 @@ const DEFAULT_FILTERS = {
 
 export default function Meals() {
     const { searchTerm } = useContext(SearchContext);
+    const authCtx = useContext(AuthContext);
     // Debounce search: input stays responsive, filtering waits 300ms after typing stops
     const debouncedSearch = useDebounce(searchTerm, 300);
     const navigate = useNavigate();
@@ -32,6 +34,9 @@ export default function Meals() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [loyaltyBannerDismissed, setLoyaltyBannerDismissed] = useState(
+        () => localStorage.getItem('loyalty_banner_dismissed') === '1'
+    );
 
     const {
         data: loadedMeals,
@@ -238,6 +243,29 @@ export default function Meals() {
                 />
 
                 <main className={`meals-content${sidebarCollapsed ? " sidebar-collapsed" : ""}`}>
+                    {/* Loyalty Points Promotional Banner */}
+                    {!loyaltyBannerDismissed && (
+                        <div className="loyalty-banner">
+                            <div className="loyalty-banner-left">
+                                <span className="loyalty-banner-icon">🏆</span>
+                                <div className="loyalty-banner-text">
+                                    <strong>Earn Loyalty Points with every order!</strong>
+                                    <span>Get 1 point per ₹10 spent. Redeem 50+ points at checkout — 10 pts = ₹1 off.</span>
+                                </div>
+                            </div>
+                            <div className="loyalty-banner-actions">
+                                {!authCtx.isLoggedIn && (
+                                    <button className="loyalty-banner-cta" onClick={() => navigate('/menu')}>
+                                        Sign in to start earning
+                                    </button>
+                                )}
+                                <button className="loyalty-banner-dismiss" onClick={() => {
+                                    setLoyaltyBannerDismissed(true);
+                                    localStorage.setItem('loyalty_banner_dismissed', '1');
+                                }} aria-label="Dismiss">✕</button>
+                            </div>
+                        </div>
+                    )}
                     <div className="meals-result-bar">
                         <span className="result-count">
                             {filteredMeals.length} {filteredMeals.length === 1 ? "dish" : "dishes"} found

@@ -466,6 +466,111 @@ h1 {
   margin: 0 auto;
 }
 
+/* ==================== LOYALTY BANNER ==================== */
+.loyalty-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: linear-gradient(135deg, rgba(255, 196, 4, 0.12) 0%, rgba(234, 88, 12, 0.08) 100%);
+  border: 1px solid rgba(255, 196, 4, 0.3);
+  border-radius: 14px;
+  padding: 0.9rem 1.25rem;
+  margin: 1rem 2rem 0.25rem;
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  animation: fadeInUp 0.4s ease-out;
+}
+
+.loyalty-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.loyalty-banner-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.loyalty-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.loyalty-banner-text strong {
+  font-size: 0.95rem;
+  color: #ffc404;
+  font-family: 'Lato', sans-serif;
+}
+
+.loyalty-banner-text span {
+  font-size: 0.82rem;
+  color: #c5beb5;
+}
+
+.loyalty-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.loyalty-banner-cta {
+  background: linear-gradient(135deg, #ffc404, #e6a800);
+  color: #1a1a2e;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Lato', sans-serif;
+  white-space: nowrap;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.loyalty-banner-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 196, 4, 0.3);
+}
+
+.loyalty-banner-dismiss {
+  background: none;
+  border: none;
+  color: #78716c;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: color 0.2s, background 0.2s;
+}
+
+.loyalty-banner-dismiss:hover {
+  color: #c5beb5;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+@media (max-width: 640px) {
+  .loyalty-banner {
+    margin: 0.75rem 0.75rem 0.25rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .loyalty-banner-actions {
+    align-self: flex-end;
+  }
+}
+
+
+
 .result-count {
   font-size: 0.85rem;
   color: #a8a29e;
