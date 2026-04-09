@@ -358,7 +358,7 @@ export default function AuthModal() {
                             onChange={(e) => { setOtpName(e.target.value); if (formErrors.name) setFormErrors((p) => ({ ...p, name: "" })); }}
                             error={formErrors.name} />
                         <button type="submit" className="auth-modal-submit" disabled={authCtx.isLoading}>
-                            {authCtx.isLoading ? "Sending new code…" : "Continue"}
+                            {authCtx.isLoading ? "Saving…" : "Continue"}
                         </button>
                     </form>
                 )}
