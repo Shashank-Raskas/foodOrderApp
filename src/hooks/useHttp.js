@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import authFetch from "../config/authFetch";
 
 // ─── Module-level stale-while-revalidate cache ───────────────────────────────
 const httpCache = new Map();
@@ -25,8 +26,9 @@ export function invalidateCache(url) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function sendHttpRequest(url, config) {
-    const response = await fetch(url, config);
+async function sendHttpRequest(url, config, authenticated = false) {
+    const fetchFn = authenticated ? authFetch : fetch;
+    const response = await fetchFn(url, config);
     const resData = await response.json();
     if (!response.ok) {
         throw new Error(resData.message || 'Something went wrong, failed to send request');
@@ -34,7 +36,7 @@ async function sendHttpRequest(url, config) {
     return resData;
 }
 
-export default function useHttp(url, config, initialData) {
+export default function useHttp(url, config, initialData, authenticated = false) {
     const isGetRequest = !config || !config.method || config.method === 'GET';
 
     // Start with cached data immediately (no loading flash if cache exists)
@@ -62,7 +64,7 @@ export default function useHttp(url, config, initialData) {
     const sendRequest = useCallback(async function sendRequest(body, silent = false) {
         if (!silent) setIsLoading(true);
         try {
-            const resData = await sendHttpRequest(url, { ...config, body });
+            const resData = await sendHttpRequest(url, { ...config, body }, authenticated);
             if (isMounted.current) {
                 setData(resData);
                 if (isGetRequest) setCache(url, resData);
@@ -73,7 +75,7 @@ export default function useHttp(url, config, initialData) {
             }
         }
         if (isMounted.current && !silent) setIsLoading(false);
-    }, [url, config]);   // eslint-disable-line
+    }, [url, config, authenticated]);   // eslint-disable-line
 
     useEffect(() => {
         if (!isGetRequest) return;

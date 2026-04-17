@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext, useMemo } from 'react';
 import AuthContext from './store/AuthContext';
 import { API_ENDPOINTS } from '../config/api';
+import authFetch from '../config/authFetch';
 import { currencyFormatter } from '../util/formatting';
 import './AdminDashboard.css';
 
@@ -35,20 +36,16 @@ export default function AdminDashboard() {
   const [couponForm, setCouponForm] = useState(null);
   const [couponSaving, setCouponSaving] = useState(false);
 
-  const adminEmail = authCtx.user?.email;
-
   useEffect(() => {
-    if (!adminEmail) return;
+    if (!authCtx.isAdmin) return;
     setLoading(true);
     setError(null);
 
-    const qs = `adminEmail=${encodeURIComponent(adminEmail)}`;
-
     Promise.all([
-      fetch(`${API_ENDPOINTS.ADMIN_ORDERS}?${qs}`).then(r => r.json()),
-      fetch(`${API_ENDPOINTS.ADMIN_USERS}?${qs}`).then(r => r.json()),
-      fetch(`${API_ENDPOINTS.ADMIN_MEALS}?${qs}`).then(r => r.json()),
-      fetch(`${API_ENDPOINTS.ADMIN_COUPONS}?${qs}`).then(r => r.json()),
+      authFetch(API_ENDPOINTS.ADMIN_ORDERS).then(r => r.json()),
+      authFetch(API_ENDPOINTS.ADMIN_USERS).then(r => r.json()),
+      authFetch(API_ENDPOINTS.ADMIN_MEALS).then(r => r.json()),
+      authFetch(API_ENDPOINTS.ADMIN_COUPONS).then(r => r.json()),
     ])
       .then(([ordersData, usersData, mealsData, couponsData]) => {
         if (ordersData.orders) setOrders(ordersData.orders);
@@ -58,7 +55,7 @@ export default function AdminDashboard() {
       })
       .catch(() => setError('Failed to load dashboard data.'))
       .finally(() => setLoading(false));
-  }, [adminEmail]);
+  }, [authCtx.isAdmin]);
 
   // Search filtering
   const filteredOrders = orders.filter(o => {
@@ -127,10 +124,10 @@ export default function AdminDashboard() {
     try {
       const isEdit = !!mealForm.id;
       const url = isEdit ? `${API_ENDPOINTS.ADMIN_MEALS}/${mealForm.id}` : API_ENDPOINTS.ADMIN_MEALS;
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method: isEdit ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adminEmail, meal: mealForm }),
+        body: JSON.stringify({ meal: mealForm }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -148,7 +145,7 @@ export default function AdminDashboard() {
   async function handleDeleteMeal(id) {
     if (!confirm('Delete this meal?')) return;
     try {
-      await fetch(`${API_ENDPOINTS.ADMIN_MEALS}/${id}?adminEmail=${encodeURIComponent(adminEmail)}`, { method: 'DELETE' });
+      await authFetch(`${API_ENDPOINTS.ADMIN_MEALS}/${id}`, { method: 'DELETE' });
       setMeals(prev => prev.filter(m => m.id !== id));
     } catch { /* silent */ }
   }
@@ -158,10 +155,10 @@ export default function AdminDashboard() {
     if (!couponForm?.code || !couponForm?.type || couponForm?.value === undefined) return;
     setCouponSaving(true);
     try {
-      const res = await fetch(API_ENDPOINTS.ADMIN_COUPONS, {
+      const res = await authFetch(API_ENDPOINTS.ADMIN_COUPONS, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adminEmail, coupon: couponForm }),
+        body: JSON.stringify({ coupon: couponForm }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -174,10 +171,10 @@ export default function AdminDashboard() {
 
   async function handleToggleCoupon(id, active) {
     try {
-      await fetch(`${API_ENDPOINTS.ADMIN_COUPONS}/${id}`, {
+      await authFetch(`${API_ENDPOINTS.ADMIN_COUPONS}/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adminEmail, active }),
+        body: JSON.stringify({ active }),
       });
       setCoupons(prev => prev.map(c => c.id === id ? { ...c, active } : c));
     } catch { /* silent */ }
@@ -186,7 +183,7 @@ export default function AdminDashboard() {
   async function handleDeleteCoupon(id) {
     if (!confirm('Delete this coupon?')) return;
     try {
-      await fetch(`${API_ENDPOINTS.ADMIN_COUPONS}/${id}?adminEmail=${encodeURIComponent(adminEmail)}`, { method: 'DELETE' });
+      await authFetch(`${API_ENDPOINTS.ADMIN_COUPONS}/${id}`, { method: 'DELETE' });
       setCoupons(prev => prev.filter(c => c.id !== id));
     } catch { /* silent */ }
   }

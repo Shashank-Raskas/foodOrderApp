@@ -9,7 +9,9 @@ import compression from 'compression';
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import db from './firebase.js';
+import { authenticate, requireAdmin } from './middleware/auth.js';
 import { generateOtp, storeOtp, verifyOtp, checkRateLimit, cleanupOtp } from './services/otpService.js';
 import { sendOtpEmail, isEmailConfigured, sendOrderConfirmationEmail } from './services/emailService.js';
 import { sendOtpSms, isSmsConfigured } from './services/smsService.js';
@@ -18,6 +20,52 @@ import { sendOtpSms, isSmsConfigured } from './services/smsService.js';
 dotenv.config({ path: `.env.${process.env.NODE_ENV || 'development'}` });
 
 const app = express();
+
+// ── JWT Configuration ──
+const JWT_SECRET = process.env.JWT_SECRET || 'flavor_alchemist_jwt_access_secret_key_2026';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'flavor_alchemist_jwt_refresh_secret_key_2026';
+const JWT_ACCESS_EXPIRY = process.env.JWT_ACCESS_EXPIRY || '15m';
+const JWT_REFRESH_EXPIRY = process.env.JWT_REFRESH_EXPIRY || '7d';
+
+// Admin email — used ONLY for initial role assignment (first signup/login)
+const ADMIN_EMAIL = 'flavor.alchemist9@gmail.com';
+
+/**
+ * Generate JWT access and refresh tokens.
+ * @param {{ userId: string, email: string, role: string }} payload
+ * @returns {{ accessToken: string, refreshToken: string }}
+ */
+function generateTokens(payload) {
+  const accessToken = jwt.sign(
+    { userId: payload.userId, email: payload.email, role: payload.role },
+    JWT_SECRET,
+    { expiresIn: JWT_ACCESS_EXPIRY }
+  );
+  const refreshToken = jwt.sign(
+    { userId: payload.userId, email: payload.email, role: payload.role },
+    JWT_REFRESH_SECRET,
+    { expiresIn: JWT_REFRESH_EXPIRY }
+  );
+  return { accessToken, refreshToken };
+}
+
+/**
+ * Store refresh token in Firestore for revocation support.
+ */
+async function storeRefreshToken(userId, refreshToken) {
+  await db.collection('refreshTokens').add({
+    userId,
+    token: refreshToken,
+    createdAt: new Date().toISOString(),
+  });
+}
+
+/**
+ * Determine the role for a user. Admin email gets 'admin', everyone else gets 'user'.
+ */
+function determineRole(email) {
+  return email?.toLowerCase() === ADMIN_EMAIL ? 'admin' : 'user';
+}
 
 // Gzip/Brotli compress all responses (JSON, images, HTML)
 app.use(compression());
@@ -96,10 +144,12 @@ app.post('/api/signup', async (req, res) => {
 
     // Hash password (if provided)
     const userId = uuidv4();
+    const role = determineRole(email);
     const newUser = {
       userId,
       email: email.toLowerCase(),
       name: name.trim(),
+      role,
       createdAt: new Date().toISOString(),
     };
 
@@ -109,12 +159,19 @@ app.post('/api/signup', async (req, res) => {
 
     await db.collection('credentials').add(newUser);
 
+    // Generate JWT tokens
+    const tokens = generateTokens({ userId, email: newUser.email, role });
+    await storeRefreshToken(userId, tokens.refreshToken);
+
     res.status(201).json({
       message: 'User created successfully!',
       userId,
       email: newUser.email,
       name: newUser.name,
+      role,
       createdAt: newUser.createdAt,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
     });
   } catch (err) {
     console.error('Signup error:', err);
@@ -162,12 +219,25 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
 
+    // Ensure role field exists (migrate old users)
+    const role = user.role || determineRole(user.email);
+    if (!user.role) {
+      await userDoc.ref.update({ role });
+    }
+
+    // Generate JWT tokens
+    const tokens = generateTokens({ userId: user.userId, email: user.email, role });
+    await storeRefreshToken(user.userId, tokens.refreshToken);
+
     res.status(200).json({
       message: 'Login successful!',
       userId: user.userId,
       email: user.email,
       name: user.name,
+      role,
       createdAt: user.createdAt,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -176,13 +246,9 @@ app.post('/api/login', async (req, res) => {
 });
 
 // Update user profile endpoint
-app.put('/api/user/profile', async (req, res) => {
-  const { userId, name } = req.body;
-
-  // Validation
-  if (!userId) {
-    return res.status(400).json({ message: 'User ID is required.' });
-  }
+app.put('/api/user/profile', authenticate, async (req, res) => {
+  const { name } = req.body;
+  const userId = req.user.userId;
 
   if (!name || name.trim() === '') {
     return res.status(400).json({ message: 'Name cannot be empty.' });
@@ -219,13 +285,9 @@ app.put('/api/user/profile', async (req, res) => {
 });
 
 // Change password endpoint
-app.put('/api/user/change-password', async (req, res) => {
-  const { userId, oldPassword, newPassword } = req.body;
-
-  // Validation
-  if (!userId) {
-    return res.status(400).json({ message: 'User ID is required.' });
-  }
+app.put('/api/user/change-password', authenticate, async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  const userId = req.user.userId;
 
   if (!oldPassword) {
     return res.status(400).json({ message: 'Current password is required.' });
@@ -392,12 +454,21 @@ app.post('/api/otp/verify', async (req, res) => {
 
     if (!userSnapshot.empty) {
       // Existing user — login
-      const user = userSnapshot.docs[0].data();
+      const userDoc = userSnapshot.docs[0];
+      const user = userDoc.data();
+
+      // Ensure role field exists (migrate old users)
+      const role = user.role || determineRole(user.email);
+      if (!user.role) {
+        await userDoc.ref.update({ role });
+      }
+
       userData = {
         userId: user.userId,
         email: user.email || null,
         phone: user.phone || null,
         name: user.name,
+        role,
         createdAt: user.createdAt,
         isNewUser: false,
       };
@@ -412,9 +483,12 @@ app.post('/api/otp/verify', async (req, res) => {
 
       // Create new user
       const userId = uuidv4();
+      const userEmail = type === 'email' ? dest : null;
+      const role = determineRole(userEmail);
       const newUser = {
         userId,
         name: name.trim(),
+        role,
         createdAt: new Date().toISOString(),
       };
 
@@ -431,6 +505,7 @@ app.post('/api/otp/verify', async (req, res) => {
         email: newUser.email || null,
         phone: newUser.phone || null,
         name: newUser.name,
+        role,
         createdAt: newUser.createdAt,
         isNewUser: true,
       };
@@ -439,9 +514,15 @@ app.post('/api/otp/verify', async (req, res) => {
     // Clean up used OTPs after successful auth
     await cleanupOtp(dest);
 
+    // Generate JWT tokens
+    const tokens = generateTokens({ userId: userData.userId, email: userData.email || '', role: userData.role });
+    await storeRefreshToken(userData.userId, tokens.refreshToken);
+
     res.status(200).json({
       message: userData.isNewUser ? 'Account created successfully!' : 'Login successful!',
       ...userData,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
     });
   } catch (err) {
     console.error('[OTP] Verify error:', err);
@@ -451,17 +532,89 @@ app.post('/api/otp/verify', async (req, res) => {
 
 // ===================== End OTP Auth =====================
 
+// ===================== Token Refresh & Logout =====================
 
-app.post('/api/orders', async (req, res) => {
+// Refresh access token
+app.post('/api/auth/refresh', async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(400).json({ message: 'Refresh token is required.' });
+  }
+
+  try {
+    // Verify the refresh token
+    const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
+
+    // Check if token exists in Firestore (not revoked)
+    const tokenSnapshot = await db.collection('refreshTokens')
+      .where('token', '==', refreshToken)
+      .where('userId', '==', decoded.userId)
+      .limit(1)
+      .get();
+
+    if (tokenSnapshot.empty) {
+      return res.status(401).json({ message: 'Invalid refresh token. Please log in again.' });
+    }
+
+    // Fetch latest role from credentials (in case it was changed by admin)
+    let role = decoded.role;
+    const userSnap = await db.collection('credentials').where('userId', '==', decoded.userId).limit(1).get();
+    if (!userSnap.empty) {
+      role = userSnap.docs[0].data().role || role;
+    }
+
+    // Generate new access token (rotate refresh token too)
+    const tokens = generateTokens({ userId: decoded.userId, email: decoded.email, role });
+
+    // Delete old refresh token and store new one
+    await tokenSnapshot.docs[0].ref.delete();
+    await storeRefreshToken(decoded.userId, tokens.refreshToken);
+
+    res.json({
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      role,
+    });
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Refresh token expired. Please log in again.' });
+    }
+    console.error('[Auth] Refresh error:', err);
+    return res.status(401).json({ message: 'Invalid refresh token.' });
+  }
+});
+
+// Logout — revoke refresh token
+app.post('/api/auth/logout', async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (refreshToken) {
+    try {
+      const tokenSnapshot = await db.collection('refreshTokens')
+        .where('token', '==', refreshToken)
+        .limit(1)
+        .get();
+      if (!tokenSnapshot.empty) {
+        await tokenSnapshot.docs[0].ref.delete();
+      }
+    } catch (err) {
+      console.error('[Auth] Logout cleanup error:', err);
+    }
+  }
+
+  res.json({ message: 'Logged out successfully.' });
+});
+
+// ===================== End Token Refresh & Logout =====================
+
+
+app.post('/api/orders', authenticate, async (req, res) => {
   const orderData = req.body.order;
-  const { userId } = req.body;
+  const userId = req.user.userId;
 
   if (!orderData || !orderData.items || orderData.items.length === 0) {
     return res.status(400).json({ message: 'Missing data.' });
-  }
-
-  if (!userId) {
-    return res.status(400).json({ message: 'User ID is required.' });
   }
 
   const customer = orderData.customer;
@@ -526,12 +679,8 @@ app.post('/api/orders', async (req, res) => {
 });
 
 // Get user's order history
-app.get('/api/user/orders', async (req, res) => {
-  const { userId } = req.query;
-
-  if (!userId) {
-    return res.status(400).json({ message: 'User ID is required.' });
-  }
+app.get('/api/user/orders', authenticate, async (req, res) => {
+  const userId = req.user.userId;
 
   try {
     console.log('[Backend] Fetching orders for userId:', userId);
@@ -570,14 +719,9 @@ app.get('/api/user/orders', async (req, res) => {
 
 
 // ===================== Admin Endpoints =====================
-const ADMIN_EMAIL = 'flavor.alchemist9@gmail.com';
 
 // Get ALL orders (admin only)
-app.get('/api/admin/orders', async (req, res) => {
-  const { adminEmail } = req.query;
-  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
-    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
-  }
+app.get('/api/admin/orders', authenticate, requireAdmin, async (req, res) => {
 
   try {
     const snapshot = await db.collection('orders').get();
@@ -593,11 +737,7 @@ app.get('/api/admin/orders', async (req, res) => {
 });
 
 // Get ALL users (admin only)
-app.get('/api/admin/users', async (req, res) => {
-  const { adminEmail } = req.query;
-  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
-    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
-  }
+app.get('/api/admin/users', authenticate, requireAdmin, async (req, res) => {
 
   try {
     const snapshot = await db.collection('users').get();
@@ -619,9 +759,8 @@ app.get('/api/admin/users', async (req, res) => {
 // ===================== Loyalty Points =====================
 
 // Get user loyalty points
-app.get('/api/user/loyalty', async (req, res) => {
-  const { userId } = req.query;
-  if (!userId) return res.status(400).json({ message: 'User ID is required.' });
+app.get('/api/user/loyalty', authenticate, async (req, res) => {
+  const userId = req.user.userId;
 
   try {
     const doc = await db.collection('loyalty').doc(userId).get();
@@ -637,9 +776,9 @@ app.get('/api/user/loyalty', async (req, res) => {
 });
 
 // Redeem loyalty points
-app.post('/api/user/loyalty/redeem', async (req, res) => {
-  const { userId, points } = req.body;
-  if (!userId) return res.status(400).json({ message: 'User ID is required.' });
+app.post('/api/user/loyalty/redeem', authenticate, async (req, res) => {
+  const userId = req.user.userId;
+  const { points } = req.body;
   if (!points || points < 50) return res.status(400).json({ message: 'Minimum 50 points required to redeem.' });
 
   try {
@@ -665,11 +804,7 @@ app.post('/api/user/loyalty/redeem', async (req, res) => {
 // ===================== Coupon/Promo Management (Admin) =====================
 
 // Get all coupons
-app.get('/api/admin/coupons', async (req, res) => {
-  const { adminEmail } = req.query;
-  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
-    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
-  }
+app.get('/api/admin/coupons', authenticate, requireAdmin, async (req, res) => {
   try {
     const snapshot = await db.collection('coupons').get();
     const coupons = [];
@@ -683,11 +818,8 @@ app.get('/api/admin/coupons', async (req, res) => {
 });
 
 // Create coupon
-app.post('/api/admin/coupons', async (req, res) => {
-  const { adminEmail, coupon } = req.body;
-  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
-    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
-  }
+app.post('/api/admin/coupons', authenticate, requireAdmin, async (req, res) => {
+  const { coupon } = req.body;
   if (!coupon || !coupon.code || !coupon.type || coupon.value === undefined) {
     return res.status(400).json({ message: 'Code, type, and value are required.' });
   }
@@ -718,11 +850,8 @@ app.post('/api/admin/coupons', async (req, res) => {
 });
 
 // Toggle coupon active status
-app.put('/api/admin/coupons/:id', async (req, res) => {
-  const { adminEmail, active } = req.body;
-  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
-    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
-  }
+app.put('/api/admin/coupons/:id', authenticate, requireAdmin, async (req, res) => {
+  const { active } = req.body;
   try {
     await db.collection('coupons').doc(req.params.id).update({ active: !!active });
     res.json({ message: 'Coupon updated!' });
@@ -733,11 +862,7 @@ app.put('/api/admin/coupons/:id', async (req, res) => {
 });
 
 // Delete coupon
-app.delete('/api/admin/coupons/:id', async (req, res) => {
-  const { adminEmail } = req.query;
-  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
-    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
-  }
+app.delete('/api/admin/coupons/:id', authenticate, requireAdmin, async (req, res) => {
   try {
     await db.collection('coupons').doc(req.params.id).delete();
     res.json({ message: 'Coupon deleted!' });
@@ -794,11 +919,7 @@ app.post('/api/coupons/validate', async (req, res) => {
 // ===================== Meal Management (Admin) =====================
 
 // Get meals from Firebase (admin view)
-app.get('/api/admin/meals', async (req, res) => {
-  const { adminEmail } = req.query;
-  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
-    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
-  }
+app.get('/api/admin/meals', authenticate, requireAdmin, async (req, res) => {
   try {
     // Read from JSON file (source of truth)
     const meals = JSON.parse(await fs.readFile('./data/available-meals.json', 'utf8'));
@@ -810,11 +931,8 @@ app.get('/api/admin/meals', async (req, res) => {
 });
 
 // Add meal
-app.post('/api/admin/meals', async (req, res) => {
-  const { adminEmail, meal } = req.body;
-  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
-    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
-  }
+app.post('/api/admin/meals', authenticate, requireAdmin, async (req, res) => {
+  const { meal } = req.body;
   if (!meal || !meal.name || !meal.price) {
     return res.status(400).json({ message: 'Name and price are required.' });
   }
@@ -844,11 +962,8 @@ app.post('/api/admin/meals', async (req, res) => {
 });
 
 // Update meal
-app.put('/api/admin/meals/:id', async (req, res) => {
-  const { adminEmail, meal } = req.body;
-  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
-    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
-  }
+app.put('/api/admin/meals/:id', authenticate, requireAdmin, async (req, res) => {
+  const { meal } = req.body;
   try {
     const meals = JSON.parse(await fs.readFile('./data/available-meals.json', 'utf8'));
     const idx = meals.findIndex(m => m.id === req.params.id);
@@ -864,11 +979,7 @@ app.put('/api/admin/meals/:id', async (req, res) => {
 });
 
 // Delete meal
-app.delete('/api/admin/meals/:id', async (req, res) => {
-  const { adminEmail } = req.query;
-  if (!adminEmail || adminEmail.toLowerCase() !== ADMIN_EMAIL) {
-    return res.status(403).json({ message: 'Forbidden: Admin access only.' });
-  }
+app.delete('/api/admin/meals/:id', authenticate, requireAdmin, async (req, res) => {
   try {
     const meals = JSON.parse(await fs.readFile('./data/available-meals.json', 'utf8'));
     const filtered = meals.filter(m => m.id !== req.params.id);
@@ -902,9 +1013,9 @@ app.get('/api/meals/:id/reviews', async (req, res) => {
 });
 
 // Submit a review
-app.post('/api/meals/:id/reviews', async (req, res) => {
-  const { userId, userName, rating, comment } = req.body;
-  if (!userId) return res.status(400).json({ message: 'User ID is required.' });
+app.post('/api/meals/:id/reviews', authenticate, async (req, res) => {
+  const userId = req.user.userId;
+  const { userName, rating, comment } = req.body;
   if (!rating || rating < 1 || rating > 5) return res.status(400).json({ message: 'Rating must be between 1 and 5.' });
 
   try {
@@ -941,9 +1052,8 @@ app.post('/api/meals/:id/reviews', async (req, res) => {
 // ===================== User Addresses =====================
 
 // Get user addresses
-app.get('/api/user/addresses', async (req, res) => {
-  const { userId } = req.query;
-  if (!userId) return res.status(400).json({ message: 'User ID is required.' });
+app.get('/api/user/addresses', authenticate, async (req, res) => {
+  const userId = req.user.userId;
 
   try {
     const snapshot = await db.collection('addresses').where('userId', '==', userId).get();
@@ -958,9 +1068,9 @@ app.get('/api/user/addresses', async (req, res) => {
 });
 
 // Add or update address
-app.post('/api/user/addresses', async (req, res) => {
-  const { userId, address } = req.body;
-  if (!userId) return res.status(400).json({ message: 'User ID is required.' });
+app.post('/api/user/addresses', authenticate, async (req, res) => {
+  const userId = req.user.userId;
+  const { address } = req.body;
   if (!address || !address.street || !address.city || !address.postalCode) {
     return res.status(400).json({ message: 'Street, city, and postal code are required.' });
   }
@@ -1002,7 +1112,7 @@ app.post('/api/user/addresses', async (req, res) => {
 });
 
 // Delete address
-app.delete('/api/user/addresses/:id', async (req, res) => {
+app.delete('/api/user/addresses/:id', authenticate, async (req, res) => {
   try {
     await db.collection('addresses').doc(req.params.id).delete();
     res.json({ message: 'Address deleted!' });
@@ -1013,9 +1123,9 @@ app.delete('/api/user/addresses/:id', async (req, res) => {
 });
 
 // Update user contact info (phone)
-app.put('/api/user/contact', async (req, res) => {
-  const { userId, phone } = req.body;
-  if (!userId) return res.status(400).json({ message: 'User ID is required.' });
+app.put('/api/user/contact', authenticate, async (req, res) => {
+  const userId = req.user.userId;
+  const { phone } = req.body;
 
   try {
     const userSnapshot = await db.collection('credentials').where('userId', '==', userId).limit(1).get();

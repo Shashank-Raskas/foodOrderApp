@@ -7,6 +7,7 @@ import FavoritesContext from "./store/FavoritesContext";
 import AuthContext from "./store/AuthContext";
 import UserProgressContext from "./store/UserProgressContext";
 import { API_URL, API_ENDPOINTS } from "../config/api";
+import authFetch from "../config/authFetch";
 import './MealDetail.css';
 
 // Estimated calorie ranges by category (per serving)
@@ -124,7 +125,7 @@ export default function MealDetail() {
         setSubmittingReview(true);
         setReviewMsg('');
         try {
-            const res = await fetch(API_ENDPOINTS.MEAL_REVIEWS(meal.id), {
+            const res = await authFetch(API_ENDPOINTS.MEAL_REVIEWS(meal.id), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

@@ -4,6 +4,7 @@ import Button from "./UI/Button";
 import Input from "./UI/Input";
 import AuthContext from "./store/AuthContext";
 import { API_ENDPOINTS } from "../config/api";
+import authFetch from "../config/authFetch";
 import './UserProfile.css';
 
 export default function UserProfile() {
@@ -36,7 +37,7 @@ export default function UserProfile() {
         if (!authCtx.user) return;
         setAddressLoading(true);
         try {
-            const res = await fetch(`${API_ENDPOINTS.USER_ADDRESSES}?userId=${authCtx.user.userId}`);
+            const res = await authFetch(API_ENDPOINTS.USER_ADDRESSES);
             const data = await res.json();
             setAddresses(data.addresses || []);
         } catch (err) {
@@ -61,11 +62,10 @@ export default function UserProfile() {
 
         setIsLoading(true);
         try {
-            const res = await fetch(API_ENDPOINTS.USER_ADDRESSES, {
+            const res = await authFetch(API_ENDPOINTS.USER_ADDRESSES, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userId: authCtx.user.userId,
                     address: {
                         ...newAddr,
                         name: authCtx.user.name,
@@ -91,7 +91,7 @@ export default function UserProfile() {
 
     async function handleDeleteAddress(id) {
         try {
-            await fetch(`${API_ENDPOINTS.USER_ADDRESSES}/${id}`, { method: 'DELETE' });
+            await authFetch(`${API_ENDPOINTS.USER_ADDRESSES}/${id}`, { method: 'DELETE' });
             setAddresses(prev => prev.filter(a => a.id !== id));
         } catch (err) {
             console.error('Failed to delete address:', err);
@@ -102,11 +102,10 @@ export default function UserProfile() {
         try {
             const addr = addresses.find(a => a.id === id);
             if (!addr) return;
-            await fetch(API_ENDPOINTS.USER_ADDRESSES, {
+            await authFetch(API_ENDPOINTS.USER_ADDRESSES, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userId: authCtx.user.userId,
                     address: { ...addr, id: addr.id, isDefault: true },
                 }),
             });
@@ -141,13 +140,12 @@ export default function UserProfile() {
 
         setIsLoading(true);
         try {
-            const response = await fetch(API_ENDPOINTS.USER_PROFILE, {
+            const response = await authFetch(API_ENDPOINTS.USER_PROFILE, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    userId: authCtx.user.userId,
                     name: formData.name.trim(),
                 }),
             });
@@ -200,13 +198,12 @@ export default function UserProfile() {
 
         setIsLoading(true);
         try {
-            const response = await fetch(API_ENDPOINTS.USER_CHANGE_PASSWORD, {
+            const response = await authFetch(API_ENDPOINTS.USER_CHANGE_PASSWORD, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    userId: authCtx.user.userId,
                     oldPassword: formData.currentPassword,
                     newPassword: formData.newPassword,
                 }),

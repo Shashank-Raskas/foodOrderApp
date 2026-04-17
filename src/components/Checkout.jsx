@@ -7,6 +7,7 @@ import AuthContext from "./store/AuthContext";
 import useHttp from "../hooks/useHttp";
 import Error from "./Error";
 import { API_ENDPOINTS, API_URL } from "../config/api";
+import authFetch from "../config/authFetch";
 
 const requestConfig = {
     method: 'POST',
@@ -47,7 +48,7 @@ export default function Checkout() {
     const [loyaltyDiscount, setLoyaltyDiscount] = useState(0);
     const [redeemingPoints, setRedeemingPoints] = useState(false);
 
-    const { data, error, isLoading, sendRequest, clearData } = useHttp(API_ENDPOINTS.ORDERS, requestConfig);
+    const { data, error, isLoading, sendRequest, clearData } = useHttp(API_ENDPOINTS.ORDERS, requestConfig, null, true);
 
     const cartTotal = cartCtx.items.reduce((totalPrice, item) => totalPrice + item.quantity * item.price, 0);
     const totalItems = cartCtx.items.reduce((t, i) => t + i.quantity, 0);
@@ -76,7 +77,7 @@ export default function Checkout() {
             });
             fetchAddresses();
             // Fetch loyalty points
-            fetch(`${API_ENDPOINTS.USER_LOYALTY}?userId=${authCtx.user.userId}`)
+            authFetch(API_ENDPOINTS.USER_LOYALTY)
                 .then(r => r.json())
                 .then(data => setLoyaltyPoints(data.points || 0))
                 .catch(() => {});
@@ -102,7 +103,7 @@ export default function Checkout() {
 
     async function fetchAddresses() {
         try {
-            const res = await fetch(`${API_ENDPOINTS.USER_ADDRESSES}?userId=${authCtx.user.userId}`);
+            const res = await authFetch(API_ENDPOINTS.USER_ADDRESSES);
             const data = await res.json();
             if (data.addresses && data.addresses.length > 0) {
                 setAddresses(data.addresses);
@@ -175,10 +176,10 @@ export default function Checkout() {
         setRedeemingPoints(true);
         try {
             const pointsToRedeem = Math.min(loyaltyPoints, Math.floor(cartTotal * 10)); // Cap redemption at cart total
-            const res = await fetch(API_ENDPOINTS.USER_LOYALTY_REDEEM, {
+            const res = await authFetch(API_ENDPOINTS.USER_LOYALTY_REDEEM, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: authCtx.user.userId, points: pointsToRedeem }),
+                body: JSON.stringify({ points: pointsToRedeem }),
             });
             const data = await res.json();
             if (res.ok) {
@@ -231,11 +232,10 @@ export default function Checkout() {
         // Save new address if opted
         if (showNewAddress && saveAddress && authCtx.user) {
             try {
-                const res = await fetch(API_ENDPOINTS.USER_ADDRESSES, {
+                const res = await authFetch(API_ENDPOINTS.USER_ADDRESSES, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        userId: authCtx.user.userId,
                         address: {
                             ...newAddress,
                             name: contactInfo.name,
@@ -257,10 +257,10 @@ export default function Checkout() {
         const fullPhone = contactInfo.phone ? `${contactInfo.countryCode}${contactInfo.phone}` : '';
         if (authCtx.user && fullPhone !== (authCtx.user.phone || '')) {
             try {
-                await fetch(API_ENDPOINTS.USER_CONTACT, {
+                await authFetch(API_ENDPOINTS.USER_CONTACT, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: authCtx.user.userId, phone: fullPhone }),
+                    body: JSON.stringify({ phone: fullPhone }),
                 });
                 authCtx.updateUser({ phone: fullPhone });
             } catch (err) { /* silent */ }
@@ -284,7 +284,6 @@ export default function Checkout() {
                 subtotal: cartTotal,
                 total: finalTotal,
             },
-            userId: authCtx.user?.userId,
         };
 
         sendRequest(JSON.stringify(orderPayload));

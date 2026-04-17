@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import PageLayout from "./UI/PageLayout";
 import AuthContext from "./store/AuthContext";
 import { API_ENDPOINTS } from "../config/api.js";
+import authFetch from "../config/authFetch";
 import { currencyFormatter } from "../util/formatting";
 import './OrderHistory.css';
 
@@ -21,8 +22,8 @@ export default function OrderHistory() {
         setIsLoading(true);
         setError(null);
         try {
-            const url = `${API_ENDPOINTS.USER_ORDERS}?userId=${authCtx.user.userId}`;
-            const response = await fetch(url);
+            const url = API_ENDPOINTS.USER_ORDERS;
+            const response = await authFetch(url);
             const text = await response.text();
             
             if (!response.ok) {
