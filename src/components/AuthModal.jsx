@@ -207,22 +207,8 @@ export default function AuthModal() {
         e.preventDefault();
         if (!otpName.trim()) { setFormErrors({ name: "Name is required to create your account" }); return; }
         if (otpName.trim().length < 2) { setFormErrors({ name: "Name must be at least 2 characters" }); return; }
-        try {
-            await authCtx.sendOtp(otpType, otpDestination.trim());
-            setResendTimer(30);
-            setOtpStep("otp-sent-with-name");
-            setFormErrors({});
-            setOtpCode(["", "", "", "", "", ""]);
-            setTimeout(() => otpRefs.current[0]?.focus(), 100);
-        } catch (err) {
-            setFormErrors({ submit: err.message });
-        }
-    }
-
-    async function handleVerifyOtpWithName(e) {
-        e.preventDefault();
+        // Reuse the already-verified OTP code + name to complete registration (no second OTP needed)
         const code = otpCode.join("");
-        if (code.length !== 6) { setFormErrors({ otp: "Please enter the complete 6-digit code" }); return; }
         try {
             await authCtx.verifyOtp(otpType, otpDestination.trim(), code, otpName.trim());
             handleClose();
@@ -230,7 +216,7 @@ export default function AuthModal() {
             setOtpCode(["", "", "", "", "", ""]);
             setOtpName("");
         } catch (err) {
-            setFormErrors({ otp: err.message });
+            setFormErrors({ submit: err.message });
         }
     }
 
@@ -372,13 +358,10 @@ export default function AuthModal() {
                             onChange={(e) => { setOtpName(e.target.value); if (formErrors.name) setFormErrors((p) => ({ ...p, name: "" })); }}
                             error={formErrors.name} />
                         <button type="submit" className="auth-modal-submit" disabled={authCtx.isLoading}>
-                            {authCtx.isLoading ? "Sending new code…" : "Continue"}
+                            {authCtx.isLoading ? "Saving…" : "Continue"}
                         </button>
                     </form>
                 )}
-
-                {/* ═══ LOGIN — OTP re-verify after name ═══ */}
-                {currentView === "login" && loginMode === "otp" && otpStep === "otp-sent-with-name" && renderOtpBoxes(handleVerifyOtpWithName)}
 
                 {/* ═══ LOGIN — Password mode ═══ */}
                 {currentView === "login" && loginMode === "password" && (

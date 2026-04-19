@@ -110,6 +110,33 @@ const backendHost = host.replace('my-food-app', 'my-food-api');
 
 ---
 
+## ⚠️ Fix: 404 on Page Refresh (SPA Routing)
+
+**Problem:** Navigating directly to `/menu`, `/about`, etc. or refreshing returns a 404.
+
+**Root Cause:** Render's static site server looks for an actual file at each URL path; it doesn't know to always serve `index.html` for a React SPA.
+
+### Fix A — Render Dashboard (for existing services)
+1. Open your **Frontend** static site in the Render dashboard
+2. Go to **Settings → Redirects/Rewrites**
+3. Click **"Add Rule"** and set:
+   - **Source:** `/*`
+   - **Destination:** `/index.html`
+   - **Action:** `Rewrite`
+4. Save — 404s on refresh will be gone immediately
+
+### Fix B — `_redirects` file (already committed)
+`public/_redirects` contains `/* /index.html 200`, which Vite copies to `dist/_redirects` on every build. Render reads this automatically for static sites. Fix A takes priority but this acts as a reliable fallback.
+
+Verify after a build:
+```bash
+npm run build
+cat dist/_redirects
+# Should output: /* /index.html 200
+```
+
+---
+
 ## ✔️ After Deployment - Verification Checklist
 
 ### **1. Check Backend Service**

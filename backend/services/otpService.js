@@ -72,13 +72,13 @@ export async function verifyOtp(destination, otp) {
     .where('destination', '==', destination.toLowerCase())
     .get();
 
-  const unverifiedDocs = snapshot.docs.filter((d) => d.data().verified === false);
-
-  if (unverifiedDocs.length === 0) {
+  // Include both verified and unverified docs — the needs-name re-verification flow
+  // calls this a second time after the OTP was already marked verified on the first attempt.
+  if (snapshot.docs.length === 0) {
     return { valid: false, reason: 'No OTP found. Please request a new one.' };
   }
 
-  const doc = unverifiedDocs[0];
+  const doc = snapshot.docs[0];
   const data = doc.data();
 
   // Check expiry
@@ -87,22 +87,36 @@ export async function verifyOtp(destination, otp) {
     return { valid: false, reason: 'OTP has expired. Please request a new one.' };
   }
 
-  // Check max attempts
-  if (data.attempts >= MAX_ATTEMPTS) {
+  // Check max attempts (skip when already verified — identity already proved once)
+  if (!data.verified && data.attempts >= MAX_ATTEMPTS) {
     await doc.ref.delete();
     return { valid: false, reason: 'Too many failed attempts. Please request a new OTP.' };
   }
 
   // Check OTP match
   if (data.otp !== otp) {
-    await doc.ref.update({ attempts: data.attempts + 1 });
+    if (!data.verified) await doc.ref.update({ attempts: data.attempts + 1 });
     return { valid: false, reason: 'Incorrect OTP. Please try again.' };
   }
 
-  // OTP is correct — mark as verified and clean up
-  await doc.ref.update({ verified: true });
-  // Delete after successful verification
-  await doc.ref.delete();
+  // OTP matches — mark as verified if not already (first-time verification)
+  if (!data.verified) {
+    await doc.ref.update({ verified: true });
+  }
 
   return { valid: true };
+}
+
+/**
+ * Clean up OTPs for a destination after successful login/signup
+ */
+export async function cleanupOtp(destination) {
+  const snapshot = await db
+    .collection(OTP_COLLECTION)
+    .where('destination', '==', destination.toLowerCase())
+    .get();
+
+  const batch = db.batch();
+  snapshot.forEach((doc) => batch.delete(doc.ref));
+  if (!snapshot.empty) await batch.commit();
 }

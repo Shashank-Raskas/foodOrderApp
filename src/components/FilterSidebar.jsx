@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import useDebounce from "../hooks/useDebounce";
 
 const FILTER_SECTIONS = [
   {
@@ -88,8 +89,28 @@ const FILTER_SECTIONS = [
   },
 ];
 
-export default function FilterSidebar({ filters, onFilterChange, onClearAll, isOpen, onToggle }) {
+export default function FilterSidebar({ filters, onFilterChange, onClearAll, isOpen, onToggle, isCollapsed, onCollapseToggle }) {
   const [collapsed, setCollapsed] = useState({});
+
+  // ── Price range debounce: local state for instant UI feedback,
+  //    debounced value propagates to parent after 200ms of no drag
+  const [localPrice, setLocalPrice] = useState(filters.priceRange);
+  const debouncedPrice = useDebounce(localPrice, 200);
+  const priceInitialized = useRef(false);
+
+  // Sync when parent resets (e.g. "Clear All")
+  useEffect(() => {
+    setLocalPrice(filters.priceRange);
+  }, [filters.priceRange]);
+
+  // Propagate debounced value to parent (skip first render)
+  useEffect(() => {
+    if (!priceInitialized.current) {
+      priceInitialized.current = true;
+      return;
+    }
+    onFilterChange("priceRange", debouncedPrice);
+  }, [debouncedPrice]);  // eslint-disable-line
 
   function toggleSection(key) {
     setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -127,14 +148,19 @@ export default function FilterSidebar({ filters, onFilterChange, onClearAll, isO
       {/* Mobile overlay */}
       {isOpen && <div className="sidebar-overlay" onClick={onToggle} />}
 
-      <aside className={`filter-sidebar${isOpen ? " open" : ""}`}>
+      <aside className={`filter-sidebar${isOpen ? " open" : ""}${isCollapsed ? " collapsed" : ""}`}>
         <div className="sidebar-header">
           <h2>
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
             </svg>
-            Filters
+            <span>Filters</span>
           </h2>
+          <button className="sidebar-collapse-btn" onClick={onCollapseToggle} title={isCollapsed ? "Expand filters" : "Collapse filters"}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
           <button className="sidebar-close-btn" onClick={onToggle} title="Close filters">✕</button>
         </div>
 
@@ -213,7 +239,7 @@ export default function FilterSidebar({ filters, onFilterChange, onClearAll, isO
                     <div className="price-range-filter">
                       <div className="range-header">
                         <span>₹0</span>
-                        <span className="range-value">₹{filters.priceRange}</span>
+                        <span className="range-value">₹{localPrice}</span>
                         <span>₹3500</span>
                       </div>
                       <input
@@ -221,10 +247,8 @@ export default function FilterSidebar({ filters, onFilterChange, onClearAll, isO
                         min="0"
                         max="3500"
                         step="50"
-                        value={filters.priceRange}
-                        onChange={(e) =>
-                          onFilterChange("priceRange", Number(e.target.value))
-                        }
+                        value={localPrice}
+                        onChange={(e) => setLocalPrice(Number(e.target.value))}
                         className="sidebar-price-slider"
                       />
                     </div>

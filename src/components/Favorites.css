@@ -1,9 +1,7 @@
 /* ==================== FAVORITES CONTAINER ==================== */
 .favorites-container {
     padding: 30px;
-    max-width: 600px;
-    max-height: 80vh;
-    overflow-y: auto;
+    max-width: 700px;
     animation: fadeInUp 0.5s ease-out;
 }
 

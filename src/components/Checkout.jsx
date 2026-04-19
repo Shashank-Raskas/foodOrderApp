@@ -7,6 +7,7 @@ import AuthContext from "./store/AuthContext";
 import useHttp from "../hooks/useHttp";
 import Error from "./Error";
 import { API_ENDPOINTS, API_URL } from "../config/api";
+import authFetch from "../config/authFetch";
 
 const requestConfig = {
     method: 'POST',
@@ -25,6 +26,7 @@ export default function Checkout() {
         name: '',
         email: '',
         phone: '',
+        countryCode: '+91',
     });
     const [newAddress, setNewAddress] = useState({
         label: 'Home',
@@ -35,31 +37,79 @@ export default function Checkout() {
     const [formErrors, setFormErrors] = useState({});
     const [saveAddress, setSaveAddress] = useState(true);
 
-    const { data, error, isLoading, sendRequest, clearData } = useHttp(API_ENDPOINTS.ORDERS, requestConfig);
+    // Promo code state (now backend-validated)
+    const [promoInput, setPromoInput] = useState('');
+    const [appliedPromo, setAppliedPromo] = useState(null); // { code, type, value, maxDiscount, discount }
+    const [promoError, setPromoError] = useState('');
+    const [promoLoading, setPromoLoading] = useState(false);
+
+    // Loyalty points state
+    const [loyaltyPoints, setLoyaltyPoints] = useState(0);
+    const [loyaltyDiscount, setLoyaltyDiscount] = useState(0);
+    const [redeemingPoints, setRedeemingPoints] = useState(false);
+
+    const { data, error, isLoading, sendRequest, clearData } = useHttp(API_ENDPOINTS.ORDERS, requestConfig, null, true);
 
     const cartTotal = cartCtx.items.reduce((totalPrice, item) => totalPrice + item.quantity * item.price, 0);
     const totalItems = cartCtx.items.reduce((t, i) => t + i.quantity, 0);
 
+    // Calculate discount from promo
+    const promoDiscount = appliedPromo ? appliedPromo.discount : 0;
+    const finalTotal = Math.max(cartTotal - promoDiscount - loyaltyDiscount, 0);
+
     // Load user data and addresses when modal opens
     useEffect(() => {
         if (userProgressCtx.progress === 'checkout' && authCtx.user) {
+            // Extract country code from stored phone if present
+            const storedPhone = authCtx.user.phone || '';
+            let phoneCode = '+91';
+            let phoneNum = storedPhone;
+            const codeMatch = storedPhone.match(/^(\+\d{1,4})/);
+            if (codeMatch) {
+                phoneCode = codeMatch[1];
+                phoneNum = storedPhone.slice(codeMatch[1].length);
+            }
             setContactInfo({
                 name: authCtx.user.name || '',
                 email: authCtx.user.email || '',
-                phone: authCtx.user.phone || '',
+                phone: phoneNum,
+                countryCode: phoneCode,
             });
             fetchAddresses();
+            // Fetch loyalty points
+            authFetch(API_ENDPOINTS.USER_LOYALTY)
+                .then(r => r.json())
+                .then(data => setLoyaltyPoints(data.points || 0))
+                .catch(() => {});
         }
     }, [userProgressCtx.progress, authCtx.user]);
 
+    // Populate phone from selected address into contact details
+    function populatePhoneFromAddress(addr) {
+        if (addr && addr.phone) {
+            const phoneStr = addr.phone || '';
+            const codeMatch = phoneStr.match(/^(\+\d{1,4})/);
+            if (codeMatch) {
+                setContactInfo(prev => ({
+                    ...prev,
+                    countryCode: codeMatch[1],
+                    phone: phoneStr.slice(codeMatch[1].length),
+                }));
+            } else {
+                setContactInfo(prev => ({ ...prev, phone: phoneStr }));
+            }
+        }
+    }
+
     async function fetchAddresses() {
         try {
-            const res = await fetch(`${API_ENDPOINTS.USER_ADDRESSES}?userId=${authCtx.user.userId}`);
+            const res = await authFetch(API_ENDPOINTS.USER_ADDRESSES);
             const data = await res.json();
             if (data.addresses && data.addresses.length > 0) {
                 setAddresses(data.addresses);
                 const defaultAddr = data.addresses.find(a => a.isDefault) || data.addresses[0];
                 setSelectedAddressId(defaultAddr.id);
+                populatePhoneFromAddress(defaultAddr);
                 setShowNewAddress(false);
             } else {
                 setAddresses([]);
@@ -82,6 +132,62 @@ export default function Checkout() {
         clearData();
         setFormErrors({});
         setNewAddress({ label: 'Home', street: '', postalCode: '', city: '' });
+        setAppliedPromo(null);
+        setPromoInput('');
+        setPromoError('');
+        setLoyaltyDiscount(0);
+    }
+
+    async function handleApplyPromo() {
+        const code = promoInput.trim().toUpperCase();
+        if (!code) {
+            setPromoError('Please enter a promo code');
+            return;
+        }
+        setPromoLoading(true);
+        setPromoError('');
+        try {
+            const res = await fetch(API_ENDPOINTS.COUPON_VALIDATE, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, cartTotal }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setPromoError(data.message || 'Invalid promo code');
+                return;
+            }
+            setAppliedPromo(data);
+        } catch {
+            setPromoError('Failed to validate promo code');
+        } finally {
+            setPromoLoading(false);
+        }
+    }
+
+    function handleRemovePromo() {
+        setAppliedPromo(null);
+        setPromoInput('');
+        setPromoError('');
+    }
+
+    async function handleRedeemPoints() {
+        if (loyaltyPoints < 50) return;
+        setRedeemingPoints(true);
+        try {
+            const pointsToRedeem = Math.min(loyaltyPoints, Math.floor(cartTotal * 10)); // Cap redemption at cart total
+            const res = await authFetch(API_ENDPOINTS.USER_LOYALTY_REDEEM, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ points: pointsToRedeem }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setLoyaltyDiscount(data.discount);
+                setLoyaltyPoints(data.remainingPoints);
+            }
+        } catch { /* silent */ }
+        finally { setRedeemingPoints(false); }
     }
 
     function handleContactChange(e) {
@@ -126,15 +232,14 @@ export default function Checkout() {
         // Save new address if opted
         if (showNewAddress && saveAddress && authCtx.user) {
             try {
-                const res = await fetch(API_ENDPOINTS.USER_ADDRESSES, {
+                const res = await authFetch(API_ENDPOINTS.USER_ADDRESSES, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        userId: authCtx.user.userId,
                         address: {
                             ...newAddress,
                             name: contactInfo.name,
-                            phone: contactInfo.phone,
+                            phone: contactInfo.phone ? `${contactInfo.countryCode}${contactInfo.phone}` : '',
                             isDefault: addresses.length === 0,
                         },
                     }),
@@ -148,32 +253,40 @@ export default function Checkout() {
             }
         }
 
-        // Update phone on user if changed
-        if (authCtx.user && contactInfo.phone !== (authCtx.user.phone || '')) {
+        // Update phone on user if changed (store with country code)
+        const fullPhone = contactInfo.phone ? `${contactInfo.countryCode}${contactInfo.phone}` : '';
+        if (authCtx.user && fullPhone !== (authCtx.user.phone || '')) {
             try {
-                await fetch(API_ENDPOINTS.USER_CONTACT, {
+                await authFetch(API_ENDPOINTS.USER_CONTACT, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: authCtx.user.userId, phone: contactInfo.phone }),
+                    body: JSON.stringify({ phone: fullPhone }),
                 });
-                authCtx.updateUser({ phone: contactInfo.phone });
+                authCtx.updateUser({ phone: fullPhone });
             } catch (err) { /* silent */ }
         }
 
-        await sendRequest(JSON.stringify({
+        // Build the order payload (used after payment succeeds)
+        const orderPayload = {
             order: {
                 items: cartCtx.items,
                 customer: {
                     name: contactInfo.name,
                     email: contactInfo.email,
-                    phone: contactInfo.phone,
+                    phone: contactInfo.phone ? `${contactInfo.countryCode}${contactInfo.phone}` : '',
                     street: orderAddress.street,
                     'postal-code': orderAddress.postalCode || orderAddress['postal-code'],
                     city: orderAddress.city,
                 },
+                promoCode: appliedPromo?.code || null,
+                discount: promoDiscount,
+                loyaltyDiscount: loyaltyDiscount,
+                subtotal: cartTotal,
+                total: finalTotal,
             },
-            userId: authCtx.user?.userId,
-        }));
+        };
+
+        sendRequest(JSON.stringify(orderPayload));
     }
 
     // Success view
@@ -193,6 +306,7 @@ export default function Checkout() {
         );
     }
 
+    
     return (
         <Modal open={userProgressCtx.progress === 'checkout'} onClose={handleClose}>
             <div className="checkout-container">
@@ -220,9 +334,27 @@ export default function Checkout() {
                         })}
                     </div>
                     <div className="checkout-total-row">
-                        <span>Total ({totalItems} items)</span>
+                        <span>Subtotal ({totalItems} items)</span>
                         <span className="checkout-total-amount">{currencyFormatter.format(cartTotal)}</span>
                     </div>
+                    {promoDiscount > 0 && (
+                        <div className="checkout-total-row checkout-discount-row">
+                            <span>Discount ({appliedPromo?.code})</span>
+                            <span className="checkout-discount-amount">-{currencyFormatter.format(promoDiscount)}</span>
+                        </div>
+                    )}
+                    {loyaltyDiscount > 0 && (
+                        <div className="checkout-total-row checkout-discount-row">
+                            <span>Loyalty Points</span>
+                            <span className="checkout-discount-amount">-{currencyFormatter.format(loyaltyDiscount)}</span>
+                        </div>
+                    )}
+                    {(promoDiscount > 0 || loyaltyDiscount > 0) && (
+                        <div className="checkout-total-row checkout-final-row">
+                            <span><strong>Total</strong></span>
+                            <span className="checkout-total-amount"><strong>{currencyFormatter.format(finalTotal)}</strong></span>
+                        </div>
+                    )}
                 </div>
 
                 <form onSubmit={handleSubmit}>
@@ -254,14 +386,31 @@ export default function Checkout() {
                                 {formErrors.email && <span className="checkout-error">{formErrors.email}</span>}
                             </div>
                             <div className="checkout-field">
-                                <label>Phone <span className="optional-tag">(optional)</span></label>
-                                <input
-                                    name="phone"
-                                    type="tel"
-                                    value={contactInfo.phone}
-                                    onChange={handleContactChange}
-                                    placeholder="+91 98765 43210"
-                                />
+                                <label>Phone</label>
+                                <div className="addr-phone-row">
+                                    <select
+                                        value={contactInfo.countryCode}
+                                        onChange={e => setContactInfo(prev => ({ ...prev, countryCode: e.target.value }))}
+                                        className="addr-country-select"
+                                    >
+                                        <option value="+91">🇮🇳 +91</option>
+                                        <option value="+1">🇺🇸 +1</option>
+                                        <option value="+44">🇬🇧 +44</option>
+                                        <option value="+61">🇦🇺 +61</option>
+                                        <option value="+81">🇯🇵 +81</option>
+                                        <option value="+49">🇩🇪 +49</option>
+                                        <option value="+86">🇨🇳 +86</option>
+                                        <option value="+971">🇦🇪 +971</option>
+                                        <option value="+65">🇸🇬 +65</option>
+                                        <option value="+33">🇫🇷 +33</option>
+                                    </select>
+                                    <input
+                                        type="tel"
+                                        value={contactInfo.phone}
+                                        onChange={e => setContactInfo(prev => ({ ...prev, phone: e.target.value.replace(/[^0-9]/g, '') }))}
+                                        placeholder="9876543210"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -283,7 +432,10 @@ export default function Checkout() {
                                             name="selectedAddress"
                                             value={addr.id}
                                             checked={selectedAddressId === addr.id}
-                                            onChange={() => setSelectedAddressId(addr.id)}
+                                            onChange={() => {
+                                                setSelectedAddressId(addr.id);
+                                                populatePhoneFromAddress(addr);
+                                            }}
                                         />
                                         <div className="address-card-content">
                                             <span className="address-label-tag">{addr.label || 'Address'}</span>
@@ -378,12 +530,62 @@ export default function Checkout() {
 
                     {error && <Error title="Failed to submit order" message={error} />}
 
+                    {/* ═══ Promo Code ═══ */}
+                    <div className="checkout-section checkout-promo-section">
+                        <h3>🏷️ Promo Code</h3>
+                        {appliedPromo ? (
+                            <div className="promo-applied">
+                                <div className="promo-applied-info">
+                                    <span className="promo-applied-code">{appliedPromo.code}</span>
+                                    <span className="promo-applied-saving">You save {currencyFormatter.format(promoDiscount)}</span>
+                                </div>
+                                <button type="button" className="promo-remove-btn" onClick={handleRemovePromo}>Remove</button>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="promo-input-row">
+                                    <input
+                                        type="text"
+                                        placeholder="Enter promo code"
+                                        value={promoInput}
+                                        onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(''); }}
+                                        className="promo-input"
+                                    />
+                                    <button type="button" className="promo-apply-btn" onClick={handleApplyPromo} disabled={promoLoading}>
+                                        {promoLoading ? '...' : 'Apply'}
+                                    </button>
+                                </div>
+                                {promoError && <span className="checkout-error promo-error">{promoError}</span>}
+                            </>
+                        )}
+                    </div>
+
+                    {/* ═══ Loyalty Points ═══ */}
+                    {loyaltyPoints >= 50 && loyaltyDiscount === 0 && (
+                        <div className="checkout-section checkout-loyalty-section">
+                            <h3>⭐ Loyalty Points</h3>
+                            <div className="loyalty-info">
+                                <span>You have <strong>{loyaltyPoints}</strong> points (worth {currencyFormatter.format(Math.floor(loyaltyPoints / 10))})</span>
+                                <button type="button" className="loyalty-redeem-btn" onClick={handleRedeemPoints} disabled={redeemingPoints}>
+                                    {redeemingPoints ? 'Redeeming...' : 'Redeem'}
+                                </button>
+                            </div>
+                            <p className="loyalty-hint">10 points = ₹1 off. Min 50 points to redeem.</p>
+                        </div>
+                    )}
+                    {loyaltyDiscount > 0 && (
+                        <div className="checkout-section checkout-loyalty-section">
+                            <h3>⭐ Loyalty Points Applied</h3>
+                            <p className="loyalty-applied">-{currencyFormatter.format(loyaltyDiscount)} discount applied!</p>
+                        </div>
+                    )}
+
                     <div className="checkout-footer">
                         <button type="button" className="checkout-back-btn" onClick={handleClose}>
                             ← Back to Cart
                         </button>
                         <button type="submit" className="checkout-pay-btn" disabled={isLoading}>
-                            {isLoading ? 'Placing Order...' : `Place Order • ${currencyFormatter.format(cartTotal)}`}
+                            {isLoading ? 'Placing Order...' : `Place Order • ${currencyFormatter.format(finalTotal)}`}
                         </button>
                     </div>
                 </form>

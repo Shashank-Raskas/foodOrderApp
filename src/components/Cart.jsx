@@ -1,4 +1,5 @@
 import { useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import Modal from "./UI/Modal";
 import CartContext from "./store/CartContext";
 import { currencyFormatter } from "../util/formatting";
@@ -9,11 +10,17 @@ import CartItem from "./CartItem";
 export default function Cart() {
     const cartCtx = useContext(CartContext);
     const userProgressCtx = useContext(UserProgressContext);
+    const navigate = useNavigate();
     const cartTotal = cartCtx.items.reduce((totalPrice, item) => totalPrice + item.quantity * item.price, 0);
     const totalItems = cartCtx.items.reduce((total, item) => total + item.quantity, 0);
 
     function handleCloseCart() {
         userProgressCtx.hideCart();
+    }
+
+    function handleBrowseMeals() {
+        userProgressCtx.hideCart();
+        navigate('/menu');
     }
 
     function handleGoToCheckout() {
@@ -45,7 +52,7 @@ export default function Cart() {
                         <p className="cart-empty-icon">🛒</p>
                         <p className="cart-empty-text">Your cart is empty</p>
                         <p className="cart-empty-hint">Add some delicious meals to get started!</p>
-                        <button className="cart-browse-btn" onClick={handleCloseCart}>Browse Meals</button>
+                        <button className="cart-browse-btn" onClick={handleBrowseMeals}>Browse Meals</button>
                     </div>
                 ) : (
                     <>

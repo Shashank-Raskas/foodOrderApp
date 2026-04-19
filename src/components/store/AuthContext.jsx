@@ -1,9 +1,11 @@
 import { createContext, useState, useEffect } from "react";
 import { API_ENDPOINTS } from "../../config/api";
+import { setTokens, clearTokens, registerLogoutCallback } from "../../config/authFetch";
 
 const AuthContext = createContext({
     user: null,
     isLoggedIn: false,
+    isAdmin: false,
     login: () => {},
     signup: () => {},
     logout: () => {},
@@ -32,6 +34,43 @@ export function AuthContextProvider({ children }) {
         }
     }, []);
 
+    // Register the logout callback so authFetch can trigger logout on token expiry
+    useEffect(() => {
+        registerLogoutCallback(() => {
+            setUser(null);
+            setError(null);
+            localStorage.removeItem('user');
+            clearTokens();
+        });
+    }, []);
+
+    /**
+     * Process auth response: store user data + JWT tokens.
+     */
+    function handleAuthResponse(data) {
+        const userData = {
+            userId: data.userId,
+            email: data.email,
+            phone: data.phone || null,
+            name: data.name,
+            role: data.role || 'user',
+            createdAt: data.createdAt,
+        };
+
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+
+        // Store JWT tokens separately
+        if (data.accessToken && data.refreshToken) {
+            setTokens({
+                accessToken: data.accessToken,
+                refreshToken: data.refreshToken,
+            });
+        }
+
+        return userData;
+    }
+
     async function login(email, password) {
         setIsLoading(true);
         setError(null);
@@ -50,16 +89,7 @@ export function AuthContextProvider({ children }) {
             }
 
             const data = await response.json();
-            const userData = {
-                userId: data.userId,
-                email: data.email,
-                name: data.name,
-                createdAt: data.createdAt,
-            };
-            
-            setUser(userData);
-            localStorage.setItem('user', JSON.stringify(userData));
-            return userData;
+            return handleAuthResponse(data);
         } catch (err) {
             setError(err.message || 'Login failed. Please try again.');
             throw err;
@@ -86,16 +116,7 @@ export function AuthContextProvider({ children }) {
             }
 
             const data = await response.json();
-            const userData = {
-                userId: data.userId,
-                email: data.email,
-                name: data.name,
-                createdAt: data.createdAt,
-            };
-            
-            setUser(userData);
-            localStorage.setItem('user', JSON.stringify(userData));
-            return userData;
+            return handleAuthResponse(data);
         } catch (err) {
             setError(err.message || 'Signup failed. Please try again.');
             throw err;
@@ -143,16 +164,7 @@ export function AuthContextProvider({ children }) {
                 }
                 throw new Error(data.message || 'Verification failed');
             }
-            const userData = {
-                userId: data.userId,
-                email: data.email,
-                phone: data.phone,
-                name: data.name,
-                createdAt: data.createdAt,
-            };
-            setUser(userData);
-            localStorage.setItem('user', JSON.stringify(userData));
-            return userData;
+            return handleAuthResponse(data);
         } catch (err) {
             setError(err.message);
             throw err;
@@ -161,10 +173,26 @@ export function AuthContextProvider({ children }) {
         }
     }
 
-    function logout() {
+    async function logout() {
+        // Revoke refresh token on server
+        try {
+            const storedTokens = localStorage.getItem('authTokens');
+            if (storedTokens) {
+                const { refreshToken } = JSON.parse(storedTokens);
+                if (refreshToken) {
+                    fetch(API_ENDPOINTS.AUTH_LOGOUT, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ refreshToken }),
+                    }).catch(() => {}); // fire-and-forget
+                }
+            }
+        } catch { /* ignore */ }
+
         setUser(null);
         setError(null);
         localStorage.removeItem('user');
+        clearTokens();
     }
 
     function updateUser(userData) {
@@ -176,6 +204,7 @@ export function AuthContextProvider({ children }) {
     const authCtx = {
         user,
         isLoggedIn: user !== null,
+        isAdmin: user?.role === 'admin',
         login,
         signup,
         logout,

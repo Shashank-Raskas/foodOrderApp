@@ -1,51 +1,43 @@
 import { useContext, useEffect, useState } from "react";
-import Modal from "./UI/Modal";
-import UserProgressContext from "./store/UserProgressContext";
+import PageLayout from "./UI/PageLayout";
 import AuthContext from "./store/AuthContext";
 import { API_ENDPOINTS } from "../config/api.js";
+import authFetch from "../config/authFetch";
 import { currencyFormatter } from "../util/formatting";
 import './OrderHistory.css';
 
 export default function OrderHistory() {
-    const userProgressCtx = useContext(UserProgressContext);
     const authCtx = useContext(AuthContext);
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        if (userProgressCtx.progress === 'orderHistory' && authCtx.user) {
-            console.log('[OrderHistory] Modal opened, fetching orders for userId:', authCtx.user.userId);
-            console.log('[OrderHistory] API Endpoint:', API_ENDPOINTS.USER_ORDERS);
+        if (authCtx.user) {
             fetchOrders();
         }
-    }, [userProgressCtx.progress, authCtx.user]);
+    }, [authCtx.user]);
 
     async function fetchOrders() {
         setIsLoading(true);
         setError(null);
         try {
-            const url = `${API_ENDPOINTS.USER_ORDERS}?userId=${authCtx.user.userId}`;
-            console.log('[OrderHistory] Fetching from URL:', url);
-            
-            const response = await fetch(url);
-            console.log('[OrderHistory] Response status:', response.status);
-            console.log('[OrderHistory] Response headers:', response.headers);
-            
+            const url = API_ENDPOINTS.USER_ORDERS;
+            const response = await authFetch(url);
             const text = await response.text();
-            console.log('[OrderHistory] Response text:', text.substring(0, 200));
             
             if (!response.ok) {
+                let errorMsg;
                 try {
                     const data = JSON.parse(text);
-                    throw new Error(data.message || `HTTP ${response.status}`);
+                    errorMsg = data.message || `HTTP ${response.status}`;
                 } catch (parseErr) {
-                    throw new Error(`Server error (${response.status}): ${text.substring(0, 100)}`);
+                    errorMsg = `Server error (${response.status}): ${text.substring(0, 100)}`;
                 }
+                throw new Error(errorMsg);
             }
             
             const data = JSON.parse(text);
-            console.log('[OrderHistory] Orders fetched:', data.orders);
             setOrders(data.orders || []);
         } catch (err) {
             console.error('[OrderHistory] Error:', err);
@@ -55,18 +47,9 @@ export default function OrderHistory() {
         }
     }
 
-    function handleClose() {
-        userProgressCtx.hideOrderHistory?.();
-    }
-
     return (
-        <Modal open={userProgressCtx.progress === 'orderHistory'} onClose={handleClose}>
-            <div className="order-history-container">
-                <div className="order-history-header">
-                    <h2>📋 Order History</h2>
-                    <button className="close-btn" onClick={handleClose}>✕</button>
-                </div>
-
+        <PageLayout title="📋 Order History" className="order-history-page">
+            <div className="order-history-container page-view">
                 {isLoading && (
                     <div className="loading-state">
                         <p>Loading orders...</p>
@@ -142,6 +125,6 @@ export default function OrderHistory() {
                     </div>
                 )}
             </div>
-        </Modal>
+        </PageLayout>
     );
 }

@@ -1,10 +1,13 @@
 import { useState, useMemo, useCallback, useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import MealItem from "./MealItem";
 import FilterSidebar from "./FilterSidebar";
 import useHttp from "../hooks/useHttp";
+import useDebounce from "../hooks/useDebounce";
 import Error from "./Error";
 import { API_ENDPOINTS } from "../config/api";
 import SearchContext from "./store/SearchContext";
+import AuthContext from "./store/AuthContext";
 
 const requestConfig = {};
 const MEALS_PER_PAGE = 12;
@@ -23,9 +26,17 @@ const DEFAULT_FILTERS = {
 
 export default function Meals() {
     const { searchTerm } = useContext(SearchContext);
+    const authCtx = useContext(AuthContext);
+    // Debounce search: input stays responsive, filtering waits 300ms after typing stops
+    const debouncedSearch = useDebounce(searchTerm, 300);
+    const navigate = useNavigate();
     const [filters, setFilters] = useState(DEFAULT_FILTERS);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [loyaltyBannerDismissed, setLoyaltyBannerDismissed] = useState(
+        () => localStorage.getItem('loyalty_banner_dismissed') === '1'
+    );
 
     const {
         data: loadedMeals,
@@ -41,16 +52,16 @@ export default function Meals() {
         setFilters(DEFAULT_FILTERS);
     }, []);
 
-    // Reset to page 1 when filters or search change
+    // Reset to page 1 when filters or debounced search change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, filters]);
+    }, [debouncedSearch, filters]);
 
     const filteredMeals = useMemo(() => {
         let result = loadedMeals.filter((meal) => {
-            // Search
-            if (searchTerm) {
-                const term = searchTerm.toLowerCase();
+            // Search (uses debounced term to avoid re-filtering on every keystroke)
+            if (debouncedSearch) {
+                const term = debouncedSearch.toLowerCase();
                 const matchesSearch =
                     meal.name.toLowerCase().includes(term) ||
                     meal.description.toLowerCase().includes(term);
@@ -109,7 +120,7 @@ export default function Meals() {
         }
 
         return result;
-    }, [loadedMeals, searchTerm, filters]);
+    }, [loadedMeals, debouncedSearch, filters]);
 
     const totalPages = Math.ceil(filteredMeals.length / MEALS_PER_PAGE);
     const pagedMeals = filteredMeals.slice(
@@ -210,15 +221,51 @@ export default function Meals() {
             </button>
 
             <div className="app-layout">
+                {/* Desktop expand button (shown when sidebar is collapsed) */}
+                <button
+                    className={`sidebar-expand-btn${sidebarCollapsed ? " visible" : ""}`}
+                    onClick={() => setSidebarCollapsed(false)}
+                    title="Open filters"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                    </svg>
+                </button>
+
                 <FilterSidebar
                     filters={filters}
                     onFilterChange={handleFilterChange}
                     onClearAll={handleClearAll}
                     isOpen={sidebarOpen}
                     onToggle={() => setSidebarOpen((prev) => !prev)}
+                    isCollapsed={sidebarCollapsed}
+                    onCollapseToggle={() => setSidebarCollapsed((prev) => !prev)}
                 />
 
-                <main className="meals-content">
+                <main className={`meals-content${sidebarCollapsed ? " sidebar-collapsed" : ""}`}>
+                    {/* Loyalty Points Promotional Banner */}
+                    {!loyaltyBannerDismissed && (
+                        <div className="loyalty-banner">
+                            <div className="loyalty-banner-left">
+                                <span className="loyalty-banner-icon">🏆</span>
+                                <div className="loyalty-banner-text">
+                                    <strong>Earn Loyalty Points with every order!</strong>
+                                    <span>Get 1 point per ₹10 spent. Redeem 50+ points at checkout — 10 pts = ₹1 off.</span>
+                                </div>
+                            </div>
+                            <div className="loyalty-banner-actions">
+                                {!authCtx.isLoggedIn && (
+                                    <button className="loyalty-banner-cta" onClick={() => navigate('/menu')}>
+                                        Sign in to start earning
+                                    </button>
+                                )}
+                                <button className="loyalty-banner-dismiss" onClick={() => {
+                                    setLoyaltyBannerDismissed(true);
+                                    localStorage.setItem('loyalty_banner_dismissed', '1');
+                                }} aria-label="Dismiss">✕</button>
+                            </div>
+                        </div>
+                    )}
                     <div className="meals-result-bar">
                         <span className="result-count">
                             {filteredMeals.length} {filteredMeals.length === 1 ? "dish" : "dishes"} found
@@ -228,7 +275,7 @@ export default function Meals() {
                     <ul id="meals">
                         {pagedMeals.length > 0 ? (
                             pagedMeals.map((meal) => (
-                                <MealItem key={meal.id} meal={meal} />
+                                <MealItem key={meal.id} meal={meal} onViewDetail={(m) => navigate(`/meal/${m.id}`, { state: { meal: m } })} />
                             ))
                         ) : (
                             <p className="center no-results">

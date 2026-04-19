@@ -1,22 +1,21 @@
 import { useContext, useState, useEffect } from "react";
-import Modal from "./UI/Modal";
+import PageLayout from "./UI/PageLayout";
 import Button from "./UI/Button";
 import Input from "./UI/Input";
 import AuthContext from "./store/AuthContext";
-import UserProgressContext from "./store/UserProgressContext";
 import { API_ENDPOINTS } from "../config/api";
+import authFetch from "../config/authFetch";
 import './UserProfile.css';
 
 export default function UserProfile() {
     const authCtx = useContext(AuthContext);
-    const userProgressCtx = useContext(UserProgressContext);
     const [editMode, setEditMode] = useState(false);
     const [changePasswordMode, setChangePasswordMode] = useState(false);
     const [addressMode, setAddressMode] = useState(false);
     const [addAddressMode, setAddAddressMode] = useState(false);
     const [addresses, setAddresses] = useState([]);
     const [addressLoading, setAddressLoading] = useState(false);
-    const [newAddr, setNewAddr] = useState({ label: 'Home', street: '', postalCode: '', city: '' });
+    const [newAddr, setNewAddr] = useState({ label: 'Home', street: '', postalCode: '', city: '', phone: '', countryCode: '+91' });
     const [formData, setFormData] = useState({
         name: authCtx.user?.name || '',
         currentPassword: '',
@@ -27,18 +26,18 @@ export default function UserProfile() {
     const [successMessage, setSuccessMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Fetch addresses when profile opens
+    // Fetch addresses when profile page loads
     useEffect(() => {
-        if (userProgressCtx.progress === 'profile' && authCtx.user) {
+        if (authCtx.user) {
             fetchAddresses();
         }
-    }, [userProgressCtx.progress]);
+    }, [authCtx.user]);
 
     async function fetchAddresses() {
         if (!authCtx.user) return;
         setAddressLoading(true);
         try {
-            const res = await fetch(`${API_ENDPOINTS.USER_ADDRESSES}?userId=${authCtx.user.userId}`);
+            const res = await authFetch(API_ENDPOINTS.USER_ADDRESSES);
             const data = await res.json();
             setAddresses(data.addresses || []);
         } catch (err) {
@@ -52,16 +51,6 @@ export default function UserProfile() {
         return null;
     }
 
-    function handleClose() {
-        userProgressCtx.hideProfile?.();
-        setEditMode(false);
-        setChangePasswordMode(false);
-        setAddressMode(false);
-        setAddAddressMode(false);
-        setFormErrors({});
-        setSuccessMessage('');
-    }
-
     // ---- Address management handlers ----
     async function handleAddAddress(e) {
         e.preventDefault();
@@ -73,15 +62,14 @@ export default function UserProfile() {
 
         setIsLoading(true);
         try {
-            const res = await fetch(API_ENDPOINTS.USER_ADDRESSES, {
+            const res = await authFetch(API_ENDPOINTS.USER_ADDRESSES, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userId: authCtx.user.userId,
                     address: {
                         ...newAddr,
                         name: authCtx.user.name,
-                        phone: authCtx.user.phone || '',
+                        phone: newAddr.phone ? `${newAddr.countryCode}${newAddr.phone}` : (authCtx.user.phone || ''),
                         isDefault: addresses.length === 0,
                     },
                 }),
@@ -89,7 +77,7 @@ export default function UserProfile() {
             const data = await res.json();
             if (data.address) {
                 setAddresses(prev => [data.address, ...prev]);
-                setNewAddr({ label: 'Home', street: '', postalCode: '', city: '' });
+                setNewAddr({ label: 'Home', street: '', postalCode: '', city: '', phone: '', countryCode: '+91' });
                 setAddAddressMode(false);
                 setSuccessMessage('Address added!');
                 setTimeout(() => setSuccessMessage(''), 3000);
@@ -103,7 +91,7 @@ export default function UserProfile() {
 
     async function handleDeleteAddress(id) {
         try {
-            await fetch(`${API_ENDPOINTS.USER_ADDRESSES}/${id}`, { method: 'DELETE' });
+            await authFetch(`${API_ENDPOINTS.USER_ADDRESSES}/${id}`, { method: 'DELETE' });
             setAddresses(prev => prev.filter(a => a.id !== id));
         } catch (err) {
             console.error('Failed to delete address:', err);
@@ -114,11 +102,10 @@ export default function UserProfile() {
         try {
             const addr = addresses.find(a => a.id === id);
             if (!addr) return;
-            await fetch(API_ENDPOINTS.USER_ADDRESSES, {
+            await authFetch(API_ENDPOINTS.USER_ADDRESSES, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userId: authCtx.user.userId,
                     address: { ...addr, id: addr.id, isDefault: true },
                 }),
             });
@@ -153,13 +140,12 @@ export default function UserProfile() {
 
         setIsLoading(true);
         try {
-            const response = await fetch(API_ENDPOINTS.USER_PROFILE, {
+            const response = await authFetch(API_ENDPOINTS.USER_PROFILE, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    userId: authCtx.user.userId,
                     name: formData.name.trim(),
                 }),
             });
@@ -212,13 +198,12 @@ export default function UserProfile() {
 
         setIsLoading(true);
         try {
-            const response = await fetch(API_ENDPOINTS.USER_CHANGE_PASSWORD, {
+            const response = await authFetch(API_ENDPOINTS.USER_CHANGE_PASSWORD, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    userId: authCtx.user.userId,
                     oldPassword: formData.currentPassword,
                     newPassword: formData.newPassword,
                 }),
@@ -254,13 +239,8 @@ export default function UserProfile() {
     }) : 'Unknown';
 
     return (
-        <Modal open={userProgressCtx.progress === 'profile'} onClose={handleClose}>
-            <div className="user-profile-container">
-                {/* Close Button - Top Right */}
-                <button className="profile-close-btn" onClick={handleClose} title="Close">
-                    ✕
-                </button>
-
+        <PageLayout title="My Profile" className="profile-page">
+            <div className="user-profile-container page-view">
                 {/* Profile Header */}
                 <div className="profile-header">
                     <div className="user-avatar">{userInitial}</div>
@@ -358,6 +338,7 @@ export default function UserProfile() {
                                     </div>
                                     <p className="addr-street">{addr.street}</p>
                                     <p className="addr-city">{addr.city}, {addr.postalCode}</p>
+                                    {addr.phone && <p className="addr-phone">📞 {addr.phone}</p>}
                                     <div className="addr-card-actions">
                                         {!addr.isDefault && (
                                             <button className="addr-set-default" onClick={() => handleSetDefault(addr.id)}>
@@ -402,6 +383,35 @@ export default function UserProfile() {
                                             className={formErrors.street ? 'input-error' : ''}
                                         />
                                         {formErrors.street && <span className="addr-error">{formErrors.street}</span>}
+                                    </div>
+                                    <div className="addr-field">
+                                        <label>Phone Number</label>
+                                        <div className="addr-phone-row">
+                                            <select
+                                                value={newAddr.countryCode}
+                                                onChange={e => setNewAddr(prev => ({ ...prev, countryCode: e.target.value }))}
+                                                className="addr-country-select"
+                                            >
+                                                <option value="+91">🇮🇳 +91</option>
+                                                <option value="+1">🇺🇸 +1</option>
+                                                <option value="+44">🇬🇧 +44</option>
+                                                <option value="+61">🇦🇺 +61</option>
+                                                <option value="+81">🇯🇵 +81</option>
+                                                <option value="+49">🇩🇪 +49</option>
+                                                <option value="+86">🇨🇳 +86</option>
+                                                <option value="+971">🇦🇪 +971</option>
+                                                <option value="+65">🇸🇬 +65</option>
+                                                <option value="+33">🇫🇷 +33</option>
+                                            </select>
+                                            <input
+                                                type="tel"
+                                                value={newAddr.phone}
+                                                onChange={e => { setNewAddr(prev => ({ ...prev, phone: e.target.value.replace(/[^0-9]/g, '') })); }}
+                                                placeholder="9876543210"
+                                                className={formErrors.phone ? 'input-error' : ''}
+                                            />
+                                        </div>
+                                        {formErrors.phone && <span className="addr-error">{formErrors.phone}</span>}
                                     </div>
                                     <div className="addr-field-row">
                                         <div className="addr-field">
@@ -538,6 +548,6 @@ export default function UserProfile() {
                 )}
 
             </div>
-        </Modal>
+        </PageLayout>
     );
 }
