@@ -1,5 +1,5 @@
 import { useContext, useState, useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Cart from "./components/Cart";
 import Checkout from "./components/Checkout";
 import Header from "./components/Header";
@@ -83,6 +83,8 @@ function AppContent() {
         <Route path="/admin" element={
           <ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>
         } />
+        {/* Handle Render redirect to /index.html */}
+        <Route path="/index.html" element={<Navigate to="/" replace />} />
         {/* Catch-all 404 route */}
         <Route path="*" element={<Error title="404 Not Found" message="Sorry, the page you requested does not exist." />} />
       </Routes>
