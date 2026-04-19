@@ -27,12 +27,14 @@ export default function OrderHistory() {
             const text = await response.text();
             
             if (!response.ok) {
+                let errorMsg;
                 try {
                     const data = JSON.parse(text);
-                    throw new Error(data.message || `HTTP ${response.status}`);
+                    errorMsg = data.message || `HTTP ${response.status}`;
                 } catch (parseErr) {
-                    throw new Error(`Server error (${response.status}): ${text.substring(0, 100)}`);
+                    errorMsg = `Server error (${response.status}): ${text.substring(0, 100)}`;
                 }
+                throw new Error(errorMsg);
             }
             
             const data = JSON.parse(text);
