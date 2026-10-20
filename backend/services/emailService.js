@@ -80,13 +80,35 @@ export async function sendOtpEmail(to, otp) {
   }
 }
 
+// Customer-entered text (name, address) goes into the email HTML, so escape it
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function getOrderConfirmationHtml(orderData) {
-  const { items = [], customer = {}, totalPrice } = orderData;
+  const { items = [], customer: rawCustomer = {}, discount = 0, loyaltyDiscount = 0, promoCode } = orderData;
+  // Orders store the amount as `total`; `totalPrice` is kept as a fallback for any older order shape
+  const totalPrice = orderData.total ?? orderData.totalPrice ?? 0;
+  const customer = Object.fromEntries(Object.entries(rawCustomer).map(([k, v]) => [k, escapeHtml(v)]));
   const formatPrice = (p) => `₹${parseFloat(p).toFixed(2)}`;
+
+  const discountRows = [
+    discount > 0 ? [`Promo${promoCode ? ` (${escapeHtml(promoCode)})` : ''}`, discount] : null,
+    loyaltyDiscount > 0 ? ['Loyalty points', loyaltyDiscount] : null,
+  ].filter(Boolean).map(([label, amount]) => `
+            <tr>
+              <td colspan="2" style="padding:8px 14px;color:#a09080;font-size:13px;">${label}</td>
+              <td style="padding:8px 14px;text-align:right;color:#a09080;font-size:13px;">-${formatPrice(amount)}</td>
+            </tr>`).join('');
 
   const itemRows = items.map(item => `
     <tr>
-      <td style="padding:10px 14px;color:#d9e2f1;border-bottom:1px solid #3a332a;">${item.name}</td>
+      <td style="padding:10px 14px;color:#d9e2f1;border-bottom:1px solid #3a332a;">${escapeHtml(item.name)}</td>
       <td style="padding:10px 14px;text-align:center;color:#ffc404;border-bottom:1px solid #3a332a;font-weight:600;">${item.quantity}</td>
       <td style="padding:10px 14px;text-align:right;color:#d9e2f1;border-bottom:1px solid #3a332a;">${formatPrice(item.price * item.quantity)}</td>
     </tr>
@@ -112,7 +134,7 @@ function getOrderConfirmationHtml(orderData) {
             </tr>
           </thead>
           <tbody>${itemRows}</tbody>
-          <tfoot>
+          <tfoot>${discountRows}
             <tr style="background:rgba(255,196,4,0.06);">
               <td colspan="2" style="padding:12px 14px;color:#ffc404;font-weight:700;font-size:15px;">Total</td>
               <td style="padding:12px 14px;text-align:right;color:#ffc404;font-weight:700;font-size:15px;">${formatPrice(totalPrice)}</td>

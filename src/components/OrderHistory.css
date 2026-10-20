@@ -148,6 +148,13 @@
     font-family: 'Lato', sans-serif;
 }
 
+.total-saved {
+    margin: 3px 0 0 0;
+    color: #6fcf97;
+    font-size: 12px;
+    font-weight: 600;
+}
+
 /* ==================== ORDER ITEMS ==================== */
 .order-items {
     margin-bottom: 15px;

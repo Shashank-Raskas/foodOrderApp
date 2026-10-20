@@ -49,7 +49,17 @@ PORT=3000
 NODE_ENV=production
 ALLOWED_ORIGINS=https://foodorderapp-99re.onrender.com,http://localhost:5173
 FIREBASE_CREDENTIALS={"type":"service_account","project_id":"your-project","private_key_id":"...","private_key":"...","client_email":"...","client_id":"...","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"..."}
+JWT_SECRET=<long random string>
+JWT_REFRESH_SECRET=<a different long random string>
+BREVO_API_KEY=<Brevo API key, for email OTP + order emails>
+SENDER_EMAIL=<sender verified in Brevo>
 ```
+
+> ⚠️ **`JWT_SECRET` and `JWT_REFRESH_SECRET` are required.** The backend refuses to start on Render without
+> them (there is no built-in fallback any more, because a fallback in a public repo lets anyone forge tokens).
+> Generate each with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`.
+> Changing them logs everyone out once. `https://foodorderapp-99re.onrender.com` is always allowed by CORS;
+> `ALLOWED_ORIGINS` is only needed for extra origins such as a custom domain.
 
 **Where to get Firebase credentials:**
 1. Go to Firebase Console → Your Project

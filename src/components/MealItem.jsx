@@ -22,6 +22,7 @@ export default function MealItem({meal, onViewDetail}) {
 
     const isFavorited = useMemo(() =>
         authCtx.isLoggedIn ? favCtx?.isFavorite(meal.id) : false,
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- recompute when the favorites list changes
         [favCtx?.favorites, meal.id, authCtx.isLoggedIn]
     );
 

@@ -90,10 +90,15 @@ export default function OrderHistory() {
                                     <div className="order-total">
                                         <p className="total-label">Total</p>
                                         <p className="total-price">
+                                            {/* `total` is what was charged after promo/loyalty discounts;
+                                                older orders without it fall back to the item sum */}
                                             {currencyFormatter.format(
-                                                order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+                                                order.total ?? order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
                                             )}
                                         </p>
+                                        {order.total != null && order.subtotal > order.total && (
+                                            <p className="total-saved">Saved {currencyFormatter.format(order.subtotal - order.total)}</p>
+                                        )}
                                     </div>
                                 </div>
 

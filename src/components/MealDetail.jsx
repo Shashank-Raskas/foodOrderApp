@@ -157,11 +157,13 @@ export default function MealDetail() {
 
     const itemInCart = useMemo(() =>
         authCtx.isLoggedIn && meal ? cartCtx.items.find(item => item.id === meal.id) : null,
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the meal's id on purpose
         [cartCtx.items, meal?.id, authCtx.isLoggedIn]
     );
 
     const isFavorited = useMemo(() =>
         authCtx.isLoggedIn && meal ? favCtx?.isFavorite(meal.id) : false,
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- recompute when the favorites list changes
         [favCtx?.favorites, meal?.id, authCtx.isLoggedIn]
     );
 

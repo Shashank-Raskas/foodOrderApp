@@ -12,7 +12,7 @@ export default function AuthModal() {
 
     // Login mode: "otp" (default, Zomato-style) | "password"
     const [loginMode, setLoginMode] = useState("otp");
-    const [view, setView] = useState("login");
+    const [view] = useState("login");
     const currentView = userProgressCtx.authView || view;
 
     // OTP flow steps: "input" | "otp-sent" | "needs-name" | "otp-sent-with-name"

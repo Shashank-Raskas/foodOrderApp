@@ -31,6 +31,7 @@ export default function UserProfile() {
         if (authCtx.user) {
             fetchAddresses();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetch once per user, not on every render
     }, [authCtx.user]);
 
     async function fetchAddresses() {

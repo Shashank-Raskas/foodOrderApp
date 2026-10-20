@@ -14,6 +14,21 @@ const requestConfig = {
     headers: { 'Content-Type': 'application/json' },
 };
 
+// Country codes offered in the phone dropdown below, longest first so "+971" is tried before "+91" and "+1"
+const KNOWN_COUNTRY_CODES = ['+971', '+91', '+86', '+81', '+65', '+61', '+49', '+44', '+33', '+1'];
+
+/**
+ * Split a stored phone like "+919876543210" into { code: "+91", number: "9876543210" }.
+ * The old /^(\+\d{1,4})/ match was greedy and read "+91 98…" as code "+9198".
+ * Codes not in the dropdown keep the previous behaviour.
+ */
+function splitPhone(phone) {
+    const known = KNOWN_COUNTRY_CODES.find(code => phone.startsWith(code));
+    if (known) return { code: known, number: phone.slice(known.length) };
+    const codeMatch = phone.match(/^(\+\d{1,4})/);
+    return codeMatch ? { code: codeMatch[1], number: phone.slice(codeMatch[1].length) } : null;
+}
+
 export default function Checkout() {
     const cartCtx = useContext(CartContext);
     const userProgressCtx = useContext(UserProgressContext);
@@ -46,6 +61,8 @@ export default function Checkout() {
     // Loyalty points state
     const [loyaltyPoints, setLoyaltyPoints] = useState(0);
     const [loyaltyDiscount, setLoyaltyDiscount] = useState(0);
+    // Points applied to this order — the server only deducts them when the order is placed
+    const [appliedPoints, setAppliedPoints] = useState(0);
     const [redeemingPoints, setRedeemingPoints] = useState(false);
 
     const { data, error, isLoading, sendRequest, clearData } = useHttp(API_ENDPOINTS.ORDERS, requestConfig, null, true);
@@ -64,10 +81,10 @@ export default function Checkout() {
             const storedPhone = authCtx.user.phone || '';
             let phoneCode = '+91';
             let phoneNum = storedPhone;
-            const codeMatch = storedPhone.match(/^(\+\d{1,4})/);
+            const codeMatch = splitPhone(storedPhone);
             if (codeMatch) {
-                phoneCode = codeMatch[1];
-                phoneNum = storedPhone.slice(codeMatch[1].length);
+                phoneCode = codeMatch.code;
+                phoneNum = codeMatch.number;
             }
             setContactInfo({
                 name: authCtx.user.name || '',
@@ -82,18 +99,19 @@ export default function Checkout() {
                 .then(data => setLoyaltyPoints(data.points || 0))
                 .catch(() => {});
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when checkout opens or the user changes
     }, [userProgressCtx.progress, authCtx.user]);
 
     // Populate phone from selected address into contact details
     function populatePhoneFromAddress(addr) {
         if (addr && addr.phone) {
             const phoneStr = addr.phone || '';
-            const codeMatch = phoneStr.match(/^(\+\d{1,4})/);
+            const codeMatch = splitPhone(phoneStr);
             if (codeMatch) {
                 setContactInfo(prev => ({
                     ...prev,
-                    countryCode: codeMatch[1],
-                    phone: phoneStr.slice(codeMatch[1].length),
+                    countryCode: codeMatch.code,
+                    phone: codeMatch.number,
                 }));
             } else {
                 setContactInfo(prev => ({ ...prev, phone: phoneStr }));
@@ -136,6 +154,7 @@ export default function Checkout() {
         setPromoInput('');
         setPromoError('');
         setLoyaltyDiscount(0);
+        setAppliedPoints(0);
     }
 
     async function handleApplyPromo() {
@@ -184,6 +203,7 @@ export default function Checkout() {
             const data = await res.json();
             if (res.ok) {
                 setLoyaltyDiscount(data.discount);
+                setAppliedPoints(data.points ?? pointsToRedeem);
                 setLoyaltyPoints(data.remainingPoints);
             }
         } catch { /* silent */ }
@@ -267,6 +287,8 @@ export default function Checkout() {
         }
 
         // Build the order payload (used after payment succeeds)
+        // The server re-prices the items and recomputes every discount/total from these fields;
+        // the amounts here only mirror what the checkout screen shows.
         const orderPayload = {
             order: {
                 items: cartCtx.items,
@@ -281,6 +303,7 @@ export default function Checkout() {
                 promoCode: appliedPromo?.code || null,
                 discount: promoDiscount,
                 loyaltyDiscount: loyaltyDiscount,
+                redeemPoints: loyaltyDiscount > 0 ? appliedPoints : 0,
                 subtotal: cartTotal,
                 total: finalTotal,
             },

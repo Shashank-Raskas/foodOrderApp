@@ -16,8 +16,20 @@ const AuthContext = createContext({
     error: null,
 });
 
+// Read the saved user synchronously so the very first render already knows who is logged in.
+// (Loading it only in the effect below meant a page refresh on /orders, /profile, /favorites or /admin
+// rendered once as "logged out", and ProtectedRoute redirected to the home page.)
+function readStoredUser() {
+    try {
+        const stored = localStorage.getItem('user');
+        return stored ? JSON.parse(stored) : null;
+    } catch {
+        return null;
+    }
+}
+
 export function AuthContextProvider({ children }) {
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(readStoredUser);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 

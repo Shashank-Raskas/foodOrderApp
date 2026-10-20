@@ -1,4 +1,4 @@
-import { useContext, useState, useEffect } from "react";
+import { useContext, useState, useEffect, lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Cart from "./components/Cart";
 import Checkout from "./components/Checkout";
@@ -11,13 +11,7 @@ import UserProfile from "./components/UserProfile";
 import Favorites from "./components/Favorites";
 import OrderHistory from "./components/OrderHistory";
 import MealDetail from "./components/MealDetail";
-import AboutUs from "./components/AboutUs";
-import ContactUs from "./components/ContactUs";
-import PrivacyPolicy from "./components/PrivacyPolicy";
-import TermsConditions from "./components/TermsConditions";
-import RefundPolicy from "./components/RefundPolicy";
-import FAQs from "./components/FAQs";
-import AdminDashboard from "./components/AdminDashboard";
+import Error from "./components/Error";
 import ScrollToTop from "./components/UI/ScrollToTop";
 import ProtectedRoute from "./components/UI/ProtectedRoute";
 import { CartContextProvider } from "./components/store/CartContext";
@@ -27,7 +21,44 @@ import { FavoritesContextProvider } from "./components/store/FavoritesContext";
 import { SearchContextProvider } from "./components/store/SearchContext";
 import AuthContext from "./components/store/AuthContext";
 
+/**
+ * Load a page only when its route is visited, so the main bundle stays small.
+ * After a new deploy the old hashed chunk files are gone; if a tab that's been open since before the
+ * deploy can't fetch a chunk, reload once to pick up the new build instead of showing a blank page.
+ */
+function lazyPage(importPage) {
+  return lazy(() =>
+    importPage()
+      .then((module) => {
+        try { sessionStorage.removeItem('chunk-reload'); } catch { /* storage unavailable */ }
+        return module;
+      })
+      .catch((err) => {
+        let alreadyReloaded = true;
+        try {
+          alreadyReloaded = sessionStorage.getItem('chunk-reload') === '1';
+          sessionStorage.setItem('chunk-reload', '1');
+        } catch { /* storage unavailable */ }
+        if (!alreadyReloaded) {
+          window.location.reload();
+          return new Promise(() => {}); // keep showing the fallback while the page reloads
+        }
+        throw err;
+      })
+  );
+}
 
+// Pages most visitors never open — split out of the main bundle
+const AboutUs = lazyPage(() => import("./components/AboutUs"));
+const ContactUs = lazyPage(() => import("./components/ContactUs"));
+const PrivacyPolicy = lazyPage(() => import("./components/PrivacyPolicy"));
+const TermsConditions = lazyPage(() => import("./components/TermsConditions"));
+const RefundPolicy = lazyPage(() => import("./components/RefundPolicy"));
+const FAQs = lazyPage(() => import("./components/FAQs"));
+const AdminDashboard = lazyPage(() => import("./components/AdminDashboard"));
+
+// Holds the page height while a lazy page loads, so the footer doesn't jump up
+const pageFallback = <div style={{ minHeight: '60vh' }} aria-busy="true" />;
 
 function ScrollToTopButton() {
   const [visible, setVisible] = useState(false);
@@ -61,6 +92,7 @@ function AppContent() {
     <>
       <ScrollToTop />
       <Header />
+      <Suspense fallback={pageFallback}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/menu" element={<Meals />} />
@@ -88,6 +120,7 @@ function AppContent() {
         {/* Catch-all 404 route */}
         <Route path="*" element={<Error title="404 Not Found" message="Sorry, the page you requested does not exist." />} />
       </Routes>
+      </Suspense>
       {/* Global modals — always available regardless of route */}
       <AuthModal />
       {authCtx.isLoggedIn && (

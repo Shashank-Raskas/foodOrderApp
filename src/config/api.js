@@ -1,37 +1,51 @@
 // API Configuration - Runtime-based detection
 // This runs in the browser, so it always detects the correct environment
 
+// Debug logs only in `npm run dev`, not in the production bundle
+const debugLog = (...args) => {
+  if (import.meta.env.DEV) console.log(...args);
+};
+
 const determineAPIUrl = () => {
+  // Explicit override, e.g. VITE_API_URL=https://my-backend.example.com in .env.production.
+  // Without it, the hostname-based detection below is used exactly as before.
+  const configured = import.meta.env.VITE_API_URL;
+  if (configured) {
+    const url = configured.replace(/\/+$/, '');
+    debugLog(`[API Config] Using VITE_API_URL backend: ${url}`);
+    return url;
+  }
+
   const hostname = window.location.hostname;
   const protocol = window.location.protocol;
-  
+
   // Debug log to verify which URL is being used
-  console.log(`[API Config] Current hostname: ${hostname}`);
-  
+  debugLog(`[API Config] Current hostname: ${hostname}`);
+
   // Local development
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     const url = 'http://localhost:3000';
-    console.log(`[API Config] Using LOCAL backend: ${url}`);
+    debugLog(`[API Config] Using LOCAL backend: ${url}`);
     return url;
   }
-  
+
   // Cloud deployment - Render
   if (hostname.includes('onrender.com')) {
     // Your service mapping:
     // Frontend: foodorderapp-99re.onrender.com
     // Backend: orderapp-backend-czwe.onrender.com
-    
+
     // IMPORTANT: If your service names are different, update this mapping!
     // Format: replace(oldServiceName, newServiceName)
     const backendHostname = hostname.replace('foodorderapp-99re', 'orderapp-backend-czwe');
     const url = `${protocol}//${backendHostname}`;
-    console.log(`[API Config] Using CLOUD backend: ${url}`);
+    debugLog(`[API Config] Using CLOUD backend: ${url}`);
     return url;
   }
-  
+
   // Other domains (Netlify, Vercel, custom domain, etc.)
   // Fallback to same domain on /api path or construct from environment
-  console.warn('[API Config] Unknown domain, attempting same-origin fallback');
+  console.warn('[API Config] Unknown domain, attempting same-origin fallback (set VITE_API_URL to point at the backend)');
   return `${protocol}//${hostname}`;
 };
 

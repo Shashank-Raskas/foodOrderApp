@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useMemo } from 'react';
+import { Fragment, useState, useEffect, useContext, useMemo } from 'react';
 import AuthContext from './store/AuthContext';
 import { API_ENDPOINTS } from '../config/api';
 import authFetch from '../config/authFetch';
@@ -275,8 +275,8 @@ export default function AdminDashboard() {
               </thead>
               <tbody>
                 {filteredOrders.map(order => (
-                  <>
-                    <tr key={order.id} className="adm-row">
+                  <Fragment key={order.id}>
+                    <tr className="adm-row">
                       <td>{order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</td>
                       <td>{order.customer?.name || '—'}</td>
                       <td className="adm-email">{order.customer?.email || '—'}</td>
@@ -289,7 +289,7 @@ export default function AdminDashboard() {
                       </td>
                     </tr>
                     {expandedOrder === order.id && (
-                      <tr key={`${order.id}-detail`} className="adm-detail-row">
+                      <tr className="adm-detail-row">
                         <td colSpan="6">
                           <div className="adm-order-detail">
                             <div className="adm-detail-section">
@@ -315,7 +315,7 @@ export default function AdminDashboard() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>

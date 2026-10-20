@@ -2,7 +2,7 @@ import { createPortal } from 'react-dom';
 
 export default function LoadingOverlay() {
   // Debug log to verify component is rendering
-  console.log('[LoadingOverlay] Rendering...');
+  if (import.meta.env.DEV) console.log('[LoadingOverlay] Rendering...');
   
   return createPortal(
     <div className="loading-overlay">

@@ -28,7 +28,7 @@
 ## 🚀 Running the Application Locally
 
 ### Prerequisites
-- Node.js (v14 or higher)
+- Node.js (v20 or v22 — see `engines` in package.json)
 - npm (comes with Node.js)
 
 ### Step 1: Setup Backend Firebase
@@ -61,6 +61,11 @@ NODE_ENV=development
 FIREBASE_CREDENTIALS=
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 ```
+
+See `backend/.env.example` for every variable. Locally `JWT_SECRET` / `JWT_REFRESH_SECRET` are optional
+(a random secret is used and logins reset when the server restarts); on Render they are required.
+The menu is stored in Firestore (`meals` collection) and seeded from `backend/data/available-meals.json`
+the first time the backend runs.
 
 ### Step 3: Start the Backend Server
 
@@ -111,6 +116,25 @@ Navigate to: **http://localhost:5173**
    - Order should be saved to Firebase Firestore
    - Success message should appear
 
+### Automated tests
+
+None of the tests touch the real Firebase project or send real emails: the backend runs against an
+in-memory copy of Firestore (`backend/test/support/fakeFirestore.js`).
+
+| Command (from the repo root) | What it runs |
+|---|---|
+| `npm test` | Frontend component/unit tests (Jest + React Testing Library) — `src/**/*.test.jsx` |
+| `npm run test:backend` | API tests (Jest + Supertest) — `backend/test/*.test.js` |
+| `npm run test:e2e` | Browser tests (Playwright) — `e2e/*.spec.js`. Builds the frontend, starts the backend on port 3100 and clicks through the real app in Microsoft Edge |
+| `npm run test:all` | Lint + all three of the above |
+| `npm run test:coverage` | Jest coverage reports for frontend and backend (`coverage/` folders) |
+
+Set `TEST_LOGS=1` to see the app's console output while Jest runs (it's hidden by default).
+
+First time only: `npm install` in the root **and** in `backend/`. The e2e tests use the installed Edge;
+on a machine without Edge (e.g. CI) run `npx playwright install chromium` and set `PW_CHANNEL=chromium`.
+After a failed e2e run, `npx playwright show-report` shows screenshots and traces.
+
 ---
 
 ## 📁 Project Structure After Changes
@@ -123,12 +147,16 @@ foodOrderApp/
 │   ├── .env.local             # Backend development env
 │   ├── .env.production        # Backend production env
 │   ├── app.js                 # Express server with CORS & env config
+│   ├── createApp.js           # Builds the Express app (middleware + routes); app.js starts it
+│   ├── config/env.js          # Loads .env and the JWT secrets
+│   ├── routes/                # auth, user, orders, meals, admin
+│   ├── services/              # menu, coupons, tokens, OTP, email, SMS
 │   ├── firebase.js            # Firebase setup
 │   ├── service-account-key.json # Firebase credentials (git ignored)
 │   ├── package.json           # Added dotenv & uuid
 │   ├── data/
-│   │   ├── available-meals.json
-│   │   └── orders.json
+│   │   └── available-meals.json  # Seed for the Firestore menu
+│   ├── test/                  # Jest API tests (in-memory Firestore)
 │   └── public/
 │       └── images/
 ├── src/

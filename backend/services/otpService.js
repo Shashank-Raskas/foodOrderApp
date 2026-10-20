@@ -21,13 +21,19 @@ export async function storeOtp(destination, otp, type) {
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
 
   // Remove any existing OTPs for this destination
+  // Codes sent inside the rate-limit window are only marked `superseded` (verifyOtp ignores them),
+  // because checkRateLimit counts these docs — deleting them reset the limit on every send.
   const existing = await db
     .collection(OTP_COLLECTION)
     .where('destination', '==', destination.toLowerCase())
     .get();
 
+  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000).toISOString();
   const batch = db.batch();
-  existing.forEach((doc) => batch.delete(doc.ref));
+  existing.forEach((doc) => {
+    if (doc.data().createdAt < windowStart) batch.delete(doc.ref);
+    else batch.update(doc.ref, { superseded: true });
+  });
   await batch.commit();
 
   // Store new OTP
@@ -74,11 +80,16 @@ export async function verifyOtp(destination, otp) {
 
   // Include both verified and unverified docs — the needs-name re-verification flow
   // calls this a second time after the OTP was already marked verified on the first attempt.
-  if (snapshot.docs.length === 0) {
+  // Superseded docs (older codes kept only for rate limiting) are skipped; the newest code wins.
+  const activeDocs = snapshot.docs
+    .filter((d) => !d.data().superseded)
+    .sort((a, b) => (b.data().createdAt || '').localeCompare(a.data().createdAt || ''));
+
+  if (activeDocs.length === 0) {
     return { valid: false, reason: 'No OTP found. Please request a new one.' };
   }
 
-  const doc = snapshot.docs[0];
+  const doc = activeDocs[0];
   const data = doc.data();
 
   // Check expiry

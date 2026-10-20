@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'flavor_alchemist_jwt_access_secret_key_2026';
+import { JWT_SECRET } from '../config/env.js';
 
 /**
  * Middleware: verifies JWT access token from Authorization header.

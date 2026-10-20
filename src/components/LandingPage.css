@@ -746,7 +746,6 @@
   animation: promoPulse 3s ease-in-out infinite;
   width: calc(100% - 10%);
 }
-}
 @keyframes promoPulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(255,196,4,0.15); }
   50% { box-shadow: 0 0 30px 5px rgba(255,196,4,0.1); }
