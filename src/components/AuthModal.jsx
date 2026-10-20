@@ -89,12 +89,36 @@ export default function AuthModal() {
     // ─── OTP Input Handling ──────────────────────────
 
     function handleOtpChange(index, value) {
+        // iPhone/Android "one-time-code" autofill (tapping the code above the keyboard) puts the whole code
+        // into the focused box. Spread it across the boxes instead of keeping only the first digit.
+        const digits = value.replace(/\D/g, "");
+        if (digits.length > 1) {
+            if (digits.length === 2 && otpCode[index] && digits.includes(otpCode[index])) {
+                // Typing over an already-filled box gives "<old><new>" — keep just the new digit
+                value = digits[0] === otpCode[index] ? digits[1] : digits[0];
+            } else {
+                // A full code always starts at the first box, whichever box had focus
+                fillOtpDigits(digits, digits.length >= otpCode.length ? 0 : index);
+                return;
+            }
+        }
         if (!/^\d?$/.test(value)) return;
         const updated = [...otpCode];
         updated[index] = value;
         setOtpCode(updated);
         if (formErrors.otp) setFormErrors((p) => ({ ...p, otp: "" }));
         if (value && index < 5) otpRefs.current[index + 1]?.focus();
+    }
+
+    /** Put several digits into the boxes starting at `start`, then focus the box after the last one filled. */
+    function fillOtpDigits(digits, start) {
+        const updated = [...otpCode];
+        for (let i = 0; i < digits.length && start + i < updated.length; i++) {
+            updated[start + i] = digits[i];
+        }
+        setOtpCode(updated);
+        if (formErrors.otp) setFormErrors((p) => ({ ...p, otp: "" }));
+        otpRefs.current[Math.min(start + digits.length, updated.length - 1)]?.focus();
     }
 
     function handleOtpKeyDown(index, e) {
@@ -252,7 +276,9 @@ export default function AuthModal() {
                             ref={(el) => (otpRefs.current[i] = el)}
                             type="text"
                             inputMode="numeric"
-                            maxLength={1}
+                            // Not 1: the browser would cut an autofilled code down to its first digit before
+                            // handleOtpChange sees it. handleOtpChange keeps one digit per box.
+                            maxLength={6}
                             className={`otp-box${formErrors.otp ? " otp-box-error" : ""}`}
                             value={digit}
                             onChange={(e) => handleOtpChange(i, e.target.value)}

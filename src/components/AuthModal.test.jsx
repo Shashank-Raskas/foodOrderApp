@@ -1,5 +1,5 @@
 import { useContext, useEffect } from 'react';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AuthModal from './AuthModal';
 import UserProgressContext from './store/UserProgressContext';
@@ -57,6 +57,55 @@ describe('AuthModal — OTP login', () => {
       { type: 'email', destination: 'new@test.com', otp: '482916', name: 'New Person' },
     ]);
     expect(JSON.parse(localStorage.getItem('authTokens'))).toEqual({ accessToken: 'a', refreshToken: 'r' });
+  });
+
+  it('fills all six boxes when the phone autofills the whole code into one box (iPhone "From Messages")', async () => {
+    const user = userEvent.setup();
+    const fetchMock = renderModal('login', [
+      ['POST', '/api/otp/send', () => ({ message: 'sent' })],
+      ['POST', '/api/otp/verify', () => authResponse({ name: 'Old User' })],
+    ]);
+    await user.type(await screen.findByLabelText('Email Address'), 'old@test.com');
+    await user.click(screen.getByRole('button', { name: 'Send One Time Password' }));
+    const boxes = await screen.findAllByRole('textbox');
+
+    // Autofill replaces the focused box's value with the full code in one change event
+    fireEvent.change(boxes[0], { target: { value: '482916' } });
+    expect(boxes.map((b) => b.value)).toEqual(['4', '8', '2', '9', '1', '6']);
+
+    await user.click(screen.getByRole('button', { name: 'Verify OTP' }));
+    await waitFor(() => expect(screen.getByTestId('who')).toHaveTextContent('Old User'));
+    expect(callsTo(fetchMock, 'POST', '/api/otp/verify')[0].body.otp).toBe('482916');
+  });
+
+  it('a full code autofilled into a later box still starts at the first box', async () => {
+    const user = userEvent.setup();
+    renderModal('login', [['POST', '/api/otp/send', () => ({ message: 'sent' })]]);
+    await user.type(await screen.findByLabelText('Email Address'), 'old@test.com');
+    await user.click(screen.getByRole('button', { name: 'Send One Time Password' }));
+    const boxes = await screen.findAllByRole('textbox');
+
+    fireEvent.change(boxes[3], { target: { value: '7 0 3 5 1 8' } });
+    expect(boxes.map((b) => b.value)).toEqual(['7', '0', '3', '5', '1', '8']);
+  });
+
+  it('typing still works one digit at a time, and typing over a box replaces its digit', async () => {
+    const user = userEvent.setup();
+    renderModal('login', [['POST', '/api/otp/send', () => ({ message: 'sent' })]]);
+    await user.type(await screen.findByLabelText('Email Address'), 'old@test.com');
+    await user.click(screen.getByRole('button', { name: 'Send One Time Password' }));
+    const boxes = await screen.findAllByRole('textbox');
+
+    for (const [i, digit] of [...'123456'].entries()) await user.type(boxes[i], digit);
+    expect(boxes.map((b) => b.value)).toEqual(['1', '2', '3', '4', '5', '6']);
+
+    // The box already has "3"; typing "9" after it produces "39" — the box should become "9"
+    fireEvent.change(boxes[2], { target: { value: '39' } });
+    expect(boxes.map((b) => b.value)).toEqual(['1', '2', '9', '4', '5', '6']);
+
+    // Letters are ignored
+    fireEvent.change(boxes[0], { target: { value: 'a' } });
+    expect(boxes[0].value).toBe('1');
   });
 
   it('shows the server error for a wrong code', async () => {

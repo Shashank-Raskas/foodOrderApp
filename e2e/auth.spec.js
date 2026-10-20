@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { signUpWithPassword, loginWithOtp, openUserMenu, uniqueEmail, storedUser } from './helpers.js';
+import { signUpWithPassword, loginWithOtp, openUserMenu, uniqueEmail, storedUser, latestOtp } from './helpers.js';
 
 test('sign up with a password, log out, and log back in', async ({ page }) => {
   const account = await signUpWithPassword(page, { name: 'Priya Sharma' });
@@ -29,6 +29,27 @@ test('a new customer signs up with an email OTP', async ({ page }) => {
   await loginWithOtp(page, email, 'Rahul Verma');
   const user = await storedUser(page);
   expect(user).toMatchObject({ email, name: 'Rahul Verma', role: 'user' });
+});
+
+test('OTP autofill: the whole code going into the first box fills all six boxes', async ({ page }) => {
+  const email = uniqueEmail('autofill');
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Login', exact: true }).click();
+  const modal = page.getByRole('dialog');
+  await modal.getByLabel('Email Address').fill(email);
+  await modal.getByRole('button', { name: 'Send One Time Password' }).click();
+  await expect(modal.getByText('Code sent to')).toBeVisible();
+
+  // This is what tapping the code above the iPhone keyboard does: the whole code lands in the focused box
+  const otp = await latestOtp(email);
+  const boxes = modal.locator('.otp-box');
+  await boxes.first().fill(otp);
+  for (let i = 0; i < 6; i++) await expect(boxes.nth(i)).toHaveValue(otp[i]);
+
+  await modal.getByRole('button', { name: 'Verify OTP' }).click();
+  await modal.getByLabel('Full Name').fill('Autofill User');
+  await modal.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.locator('.profile-avatar-btn')).toBeVisible();
 });
 
 test('a logged-in user who reloads a protected page stays on it', async ({ page }) => {
