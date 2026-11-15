@@ -15,27 +15,27 @@
     gap: 1rem;
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
-    border-bottom: 2px solid rgba(212, 165, 116, 0.3);
+    border-bottom: 2px solid var(--border);
 }
 
 .page-back-btn {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    background: rgba(212, 165, 116, 0.15);
-    border: 1px solid rgba(212, 165, 116, 0.3);
-    color: #d4a574;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    color: var(--text-2);
     padding: 0.5rem 1rem;
     border-radius: 8px;
     cursor: pointer;
     font-size: 0.9rem;
-    font-family: 'Lato', sans-serif;
+    font-family: var(--font-sans);
     transition: all 0.2s ease;
     flex-shrink: 0;
 }
 
 .page-back-btn:hover {
-    background: rgba(212, 165, 116, 0.25);
+    background: var(--surface-3);
     color: #f0c78a;
     transform: translateX(-2px);
 }
@@ -45,25 +45,26 @@
 }
 
 .page-title {
-    color: #d4a574;
+    color: var(--text-2);
     font-size: 1.6rem;
-    font-family: 'Lato', sans-serif;
+    font-family: var(--font-sans);
     font-weight: 700;
     margin: 0;
     letter-spacing: 0.5px;
 }
 
 .page-content {
-    background: linear-gradient(135deg, #e4ddd4 0%, #f5f0e8 100%);
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface) 100%);
     border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 32px rgb(var(--ink-rgb) / 0.12);
     overflow: hidden;
 }
 
 /* Dark-theme pages (About Us, Contact Us) need their own dark background */
+/* (With the light theme they use the normal white card, just with more padding) */
 .about-us-page .page-content,
 .contact-us-page .page-content {
-    background: linear-gradient(160deg, #1a1608 0%, #231b09 60%, #1e1b10 100%);
+    background: var(--surface);
     padding: 2rem 2.5rem;
 }
 
@@ -71,6 +72,19 @@
     .about-us-page .page-content,
     .contact-us-page .page-content {
         padding: 1.5rem 1rem;
+    }
+}
+
+/* Text-heavy pages need inner padding so the text doesn't touch the card edge */
+.faq-page .page-content,
+.policy-page .page-content {
+    padding: 1.75rem 2.25rem;
+}
+
+@media (max-width: 600px) {
+    .faq-page .page-content,
+    .policy-page .page-content {
+        padding: 1.25rem 1rem;
     }
 }
 
@@ -89,6 +103,17 @@
     margin: 0 auto;
 }
 
+/* Desktop: wider page with the photo beside the details (see MealDetail.css) */
+@media (min-width: 900px) {
+    .page-layout.meal-detail-page {
+        max-width: 1120px;
+    }
+    .meal-detail-page .page-content {
+        max-width: none;
+        overflow: visible; /* lets the photo stay in view (position: sticky) while scrolling */
+    }
+}
+
 .meal-detail-page .meal-detail {
     max-height: none;
     overflow-y: visible;
@@ -98,14 +123,14 @@
 .meal-detail-error {
     text-align: center;
     padding: 4rem 2rem;
-    color: #d4a574;
+    color: var(--text-2);
     font-size: 1.1rem;
 }
 
 .meal-detail-error button {
     margin-top: 1rem;
-    background: #d4a574;
-    color: #1d1a16;
+    background: var(--surface-3);
+    color: var(--ink);
     border: none;
     padding: 0.6rem 1.5rem;
     border-radius: 8px;

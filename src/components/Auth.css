@@ -4,7 +4,7 @@
     min-height: 100vh;
     display: flex;
     align-items: stretch;
-    background: linear-gradient(135deg, #29251c 0%, #2c2306 100%);
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface) 100%);
     overflow: hidden;
 }
 
@@ -95,8 +95,8 @@
 
 /* ==================== BRANDING SECTION ==================== */
 .auth-branding {
-    background: linear-gradient(135deg, #29251c 0%, #3a332a 100%);
-    color: #e4ddd4;
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
+    color: var(--ink);
     padding: 60px 40px;
     display: flex;
     flex-direction: column;
@@ -120,7 +120,7 @@
     right: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle, rgba(255, 196, 4, 0.1) 0%, transparent 70%);
+    background: radial-gradient(circle, rgb(var(--brand-rgb) / 0.1) 0%, transparent 70%);
     animation: float 8s ease-in-out infinite;
 }
 
@@ -142,15 +142,15 @@
     font-size: 32px;
     font-weight: 700;
     margin: 0;
-    color: #ffc404;
+    color: var(--brand);
     letter-spacing: 1px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    font-family: 'Lato', sans-serif;
+    text-shadow: 2px 2px 4px rgb(var(--ink-rgb) / 0.12);
+    font-family: var(--font-sans);
 }
 
 .auth-brand-tagline {
     font-size: 16px;
-    color: #d4a574;
+    color: var(--text-2);
     margin: 10px 0;
     font-style: italic;
     letter-spacing: 0.5px;
@@ -159,7 +159,7 @@
 .auth-decorative-line {
     width: 60px;
     height: 3px;
-    background: linear-gradient(90deg, transparent, #ffc404, transparent);
+    background: linear-gradient(90deg, transparent, var(--brand), transparent);
     margin: 20px auto;
     border-radius: 2px;
 }
@@ -197,7 +197,7 @@
     flex-direction: column;
     justify-content: center;
     animation: slideInRight 0.8s ease-out;
-    background: linear-gradient(135deg, #e4ddd4 0%, #f5f0e8 100%);
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface) 100%);
     overflow-y: auto;
     height: 100%;
     min-height: 100vh;
@@ -220,14 +220,14 @@
 .form-header h2 {
     font-size: 28px;
     font-weight: 700;
-    color: #2c2306;
+    color: var(--ink);
     margin: 0 0 10px 0;
-    font-family: 'Lato', sans-serif;
+    font-family: var(--font-sans);
 }
 
 .form-subtitle {
     font-size: 14px;
-    color: #5a5451;
+    color: var(--text-2);
     margin: 0;
 }
 
@@ -246,7 +246,7 @@
 }
 
 .auth-form .control label {
-    color: #2c2306;
+    color: var(--ink);
     font-weight: 600;
     font-size: 14px;
     margin-bottom: 8px;
@@ -255,21 +255,21 @@
 
 .auth-form input {
     width: 100%;
-    background-color: #fff;
-    color: #1f1a09;
-    border: 2px solid #d4a574;
+    background-color: #ffffff;
+    color: var(--ink);
+    border: 2px solid var(--border);
     padding: 12px 15px;
     border-radius: 6px;
     font-family: inherit;
     font-size: 14px;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 4px rgb(var(--ink-rgb) / 0.02);
 }
 
 .auth-form input:focus {
     outline: none;
-    border-color: #ffc404;
-    box-shadow: 0 0 0 3px rgba(255, 196, 4, 0.1), 0 4px 12px rgba(255, 196, 4, 0.2);
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgb(var(--brand-rgb) / 0.06), 0 4px 12px rgb(var(--brand-rgb) / 0.12);
     transform: translateY(-2px);
 }
 
@@ -308,11 +308,11 @@
 /* ==================== PASSWORD HINT ==================== */
 .password-hint {
     font-size: 12px;
-    color: #5a5451;
+    color: var(--text-2);
     margin: 12px 0 20px 0;
     padding: 12px;
-    background-color: rgba(212, 165, 116, 0.08);
-    border-left: 3px solid #d4a574;
+    background-color: var(--surface-2);
+    border-left: 3px solid var(--border);
     border-radius: 4px;
     line-height: 1.5;
 }
@@ -327,8 +327,8 @@
 
 .auth-actions button {
     flex: 1;
-    background: linear-gradient(135deg, #ffc404, #ffab04);
-    color: #1f1a09;
+    background: linear-gradient(135deg, var(--brand), var(--brand-600));
+    color: var(--on-brand);
     font-weight: 700;
     font-size: 15px;
     padding: 13px 20px;
@@ -336,15 +336,15 @@
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(255, 196, 4, 0.25);
+    box-shadow: 0 4px 12px rgb(var(--brand-rgb) / 0.15);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .auth-actions button:hover:not(:disabled) {
     transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(255, 196, 4, 0.35);
-    background: linear-gradient(135deg, #ffab04, #ff9800);
+    box-shadow: 0 6px 20px rgb(var(--brand-rgb) / 0.21);
+    background: linear-gradient(135deg, var(--brand-600), #ff9800);
 }
 
 .auth-actions button:active:not(:disabled) {
@@ -362,7 +362,7 @@
     display: flex;
     align-items: center;
     margin: 20px 0;
-    color: #5a5451;
+    color: var(--text-2);
     font-size: 13px;
     animation: fadeInUp 0.6s ease-out 0.35s both;
 }
@@ -371,7 +371,7 @@
     content: '';
     flex: 1;
     height: 1px;
-    background: linear-gradient(90deg, #d4a574, transparent);
+    background: linear-gradient(90deg, var(--surface-3), transparent);
     margin-right: 15px;
 }
 
@@ -379,7 +379,7 @@
     content: '';
     flex: 1;
     height: 1px;
-    background: linear-gradient(90deg, transparent, #d4a574);
+    background: linear-gradient(90deg, transparent, var(--surface-3));
     margin-left: 15px;
 }
 
@@ -392,8 +392,8 @@
 .auth-switch-btn-large {
     width: 100%;
     background-color: transparent;
-    color: #d4a574;
-    border: 2px solid #d4a574;
+    color: var(--text-2);
+    border: 2px solid var(--border);
     padding: 12px 20px;
     border-radius: 6px;
     cursor: pointer;
@@ -406,10 +406,10 @@
 }
 
 .auth-switch-btn-large:hover {
-    background-color: #d4a574;
-    color: #e4ddd4;
+    background-color: var(--surface-3);
+    color: var(--ink);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(212, 165, 116, 0.25);
+    box-shadow: 0 4px 12px rgb(var(--ink-rgb) / 0.125);
 }
 
 .auth-switch-btn-large:active {

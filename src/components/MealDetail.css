@@ -1,8 +1,29 @@
 /* ==================== MEAL DETAIL ==================== */
 .meal-detail {
     scrollbar-width: thin;
-    scrollbar-color: #d4a574 transparent;
+    scrollbar-color: var(--border-strong) transparent;
     position: relative;
+}
+
+/* Desktop: photo on the left (stays in view while scrolling), details and reviews on the right */
+@media (min-width: 900px) {
+    .meal-detail-page .meal-detail {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: start;
+    }
+    .meal-detail-page .meal-detail-hero {
+        position: sticky;
+        top: 88px;
+        width: auto; /* not 100% — with the margin that would spill into the text column */
+        height: auto;
+        aspect-ratio: 1;
+        margin: 20px;
+        border-radius: 18px;
+    }
+    .meal-detail-page .meal-detail-content {
+        padding: 32px 32px 28px 12px;
+    }
 }
 
 .meal-detail::-webkit-scrollbar {
@@ -10,7 +31,7 @@
 }
 
 .meal-detail::-webkit-scrollbar-thumb {
-    background: #d4a574;
+    background: var(--surface-3);
     border-radius: 3px;
 }
 
@@ -46,7 +67,7 @@
     width: 100%;
     height: 260px;
     overflow: hidden;
-    background: #2a2520;
+    background: var(--surface);
 }
 
 .meal-detail-hero img {
@@ -57,7 +78,7 @@
 }
 
 .meal-detail-hero img.loading-shimmer {
-    background: linear-gradient(90deg, #2a2520 25%, #3a332a 50%, #2a2520 75%);
+    background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%);
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
     opacity: 0.7;
@@ -71,21 +92,21 @@
     position: absolute;
     top: 14px;
     left: 14px;
-    background: linear-gradient(135deg, #ffc404, #ffab04);
-    color: #2c2306;
+    background: linear-gradient(135deg, var(--brand), var(--brand-600));
+    color: var(--on-brand);
     padding: 6px 14px;
     border-radius: 20px;
     font-size: 0.78rem;
     font-weight: 700;
-    font-family: 'Lato', sans-serif;
-    box-shadow: 0 2px 8px rgba(255, 196, 4, 0.4);
+    font-family: var(--font-sans);
+    box-shadow: 0 2px 8px rgb(var(--brand-rgb) / 0.24);
 }
 
 .meal-detail-fav-btn {
     position: absolute;
     bottom: 14px;
     right: 14px;
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--surface-2);
     border: none;
     border-radius: 50%;
     width: 44px;
@@ -95,13 +116,13 @@
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgb(var(--ink-rgb) / 0.08);
     padding: 0;
 }
 
 .meal-detail-fav-btn svg {
     fill: none;
-    stroke: #aaa;
+    stroke: #aaaaaa;
     stroke-width: 2;
     transition: fill 0.25s ease, stroke 0.25s ease;
 }
@@ -141,36 +162,35 @@
 
 .meal-detail-name {
     margin: 0;
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: #2c2306;
-    font-family: 'Lato', sans-serif;
-    line-height: 1.3;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--ink);
+    font-family: var(--font-sans);
+    line-height: 1.25;
+    letter-spacing: -0.02em;
 }
 
 .meal-detail-category {
     margin: 4px 0 0;
     font-size: 0.78rem;
-    color: #a8a29e;
+    color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    font-family: 'Lato', sans-serif;
+    font-family: var(--font-sans);
 }
 
 .meal-detail-price {
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: #d4a574;
-    font-family: 'Lato', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--ink);
+    font-family: var(--font-sans);
     flex-shrink: 0;
-    background: rgba(212, 165, 116, 0.1);
-    padding: 6px 16px;
-    border-radius: 8px;
+    letter-spacing: -0.02em;
 }
 
 /* Description */
 .meal-detail-description {
-    color: #5a5451;
+    color: var(--text-2);
     font-size: 0.92rem;
     line-height: 1.6;
     margin: 0 0 18px;
@@ -189,13 +209,13 @@
     align-items: center;
     gap: 4px;
     padding: 5px 12px;
-    border: 1.5px solid #d4a574;
+    border: 1.5px solid var(--border);
     border-radius: 20px;
     font-size: 0.78rem;
     font-weight: 600;
-    font-family: 'Lato', sans-serif;
-    color: #5a5451;
-    background: rgba(255, 255, 255, 0.5);
+    font-family: var(--font-sans);
+    color: var(--text-2);
+    background: var(--surface-2);
 }
 
 /* Info grid */
@@ -212,8 +232,8 @@
     align-items: center;
     gap: 4px;
     padding: 14px 8px;
-    background: rgba(212, 165, 116, 0.06);
-    border: 1px solid rgba(212, 165, 116, 0.15);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
     border-radius: 12px;
     text-align: center;
 }
@@ -225,35 +245,35 @@
 .info-card-value {
     font-size: 0.88rem;
     font-weight: 700;
-    color: #2c2306;
-    font-family: 'Lato', sans-serif;
+    color: var(--ink);
+    font-family: var(--font-sans);
 }
 
 .info-card-label {
     font-size: 0.72rem;
-    color: #a8a29e;
-    font-family: 'Lato', sans-serif;
+    color: var(--muted);
+    font-family: var(--font-sans);
 }
 
 /* Actions */
 .meal-detail-actions {
-    border-top: 1.5px solid rgba(212, 165, 116, 0.2);
+    border-top: 1.5px solid var(--border);
     padding-top: 20px;
 }
 
 .meal-detail-add-btn {
     width: 100%;
     padding: 14px 20px;
-    background: linear-gradient(135deg, #ffc404, #ffab04);
+    background: linear-gradient(135deg, var(--brand), var(--brand-600));
     border: none;
-    color: #1f1a09;
+    color: var(--on-brand);
     border-radius: 12px;
     font-weight: 700;
     font-size: 1rem;
     cursor: pointer;
     transition: all 0.25s ease;
-    font-family: 'Lato', sans-serif;
-    box-shadow: 0 4px 14px rgba(255, 196, 4, 0.3);
+    font-family: var(--font-sans);
+    box-shadow: 0 4px 14px rgb(var(--brand-rgb) / 0.18);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -261,8 +281,8 @@
 }
 
 .meal-detail-add-btn:hover {
-    background: linear-gradient(135deg, #ffb300, #ff9a00);
-    box-shadow: 0 6px 20px rgba(255, 196, 4, 0.45);
+    background: linear-gradient(135deg, var(--brand-600), var(--brand-600));
+    box-shadow: 0 6px 20px rgb(var(--brand-rgb) / 0.27);
     transform: translateY(-1px);
 }
 
@@ -270,7 +290,7 @@
     width: 18px;
     height: 18px;
     fill: none;
-    stroke: #1f1a09;
+    stroke: var(--ink);
     stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
@@ -290,7 +310,7 @@
     gap: 0;
     border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgb(var(--ink-rgb) / 0.04);
 }
 
 .meal-detail-qty-controls .qty-btn {
@@ -308,15 +328,15 @@
 .meal-detail-subtotal {
     font-size: 1.2rem;
     font-weight: 700;
-    color: #2c2306;
-    font-family: 'Lato', sans-serif;
+    color: var(--ink);
+    font-family: var(--font-sans);
 }
 
 /* ==================== RATINGS & REVIEWS ==================== */
 .meal-reviews-section {
     margin-top: 2rem;
     padding-top: 1.5rem;
-    border-top: 1px solid rgba(255, 196, 4, 0.15);
+    border-top: 1px solid rgb(var(--brand-rgb) / 0.15);
 }
 
 .reviews-header {
@@ -329,8 +349,9 @@
 }
 
 .reviews-header h3 {
-    color: #ffc404;
-    font-size: 1.15rem;
+    color: var(--ink);
+    font-size: 1.2rem;
+    font-weight: 800;
     margin: 0;
 }
 
@@ -341,33 +362,33 @@
 }
 
 .reviews-avg {
-    color: #ffc404;
+    color: var(--accent);
     font-size: 1rem;
     letter-spacing: 1px;
 }
 
 .reviews-avg-num {
-    color: #ffc404;
+    color: var(--brand);
     font-weight: 700;
     font-size: 1rem;
 }
 
 .reviews-count {
-    color: #a09080;
+    color: var(--muted);
     font-size: 0.85rem;
 }
 
 /* Review form */
 .review-form {
-    background: rgba(255, 196, 4, 0.04);
-    border: 1px solid rgba(255, 196, 4, 0.12);
+    background: rgb(var(--brand-rgb) / 0.04);
+    border: 1px solid rgb(var(--brand-rgb) / 0.12);
     border-radius: 12px;
     padding: 1rem 1.25rem;
     margin-bottom: 1.25rem;
 }
 
 .review-form-title {
-    color: #c5beb5;
+    color: var(--text-2);
     font-size: 0.9rem;
     margin: 0 0 0.5rem;
 }
@@ -382,7 +403,7 @@
     background: none;
     border: none;
     font-size: 1.6rem;
-    color: #555;
+    color: var(--border-strong);
     cursor: pointer;
     padding: 0;
     transition: color 0.15s, transform 0.15s;
@@ -390,16 +411,16 @@
 }
 
 .star-btn:hover { transform: scale(1.15); }
-.star-btn.star-filled { color: #ffc404; }
+.star-btn.star-filled { color: var(--accent); }
 
 .review-comment {
     width: 100%;
     padding: 10px 12px;
     border-radius: 8px;
-    border: 1.5px solid rgba(255, 196, 4, 0.2);
-    background: rgba(255, 255, 255, 0.04);
-    color: #d9e2f1;
-    font-family: 'Lato', sans-serif;
+    border: 1.5px solid rgb(var(--brand-rgb) / 0.2);
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--font-sans);
     font-size: 0.9rem;
     resize: vertical;
     outline: none;
@@ -407,24 +428,24 @@
     margin-bottom: 0.5rem;
 }
 
-.review-comment:focus { border-color: #ffc404; }
+.review-comment:focus { border-color: var(--brand); }
 
 .review-submit-btn {
-    background: #ffc404;
-    color: #1d1a16;
+    background: var(--brand);
+    color: var(--on-brand);
     border: none;
     padding: 8px 20px;
     border-radius: 8px;
     font-weight: 700;
     font-size: 0.9rem;
     cursor: pointer;
-    font-family: 'Lato', sans-serif;
+    font-family: var(--font-sans);
 }
 
 .review-submit-btn:disabled { opacity: 0.6; }
 
 .review-msg {
-    color: #ffc404;
+    color: var(--brand);
     font-size: 0.85rem;
     margin: 0.5rem 0 0;
 }
@@ -437,8 +458,8 @@
 }
 
 .review-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 196, 4, 0.08);
+    background: var(--surface);
+    border: 1px solid rgb(var(--brand-rgb) / 0.08);
     border-radius: 10px;
     padding: 0.75rem 1rem;
 }
@@ -453,31 +474,31 @@
 
 .review-author {
     font-weight: 700;
-    color: #d9e2f1;
+    color: var(--ink);
     font-size: 0.9rem;
 }
 
 .review-stars {
-    color: #ffc404;
+    color: var(--accent);
     font-size: 0.85rem;
     letter-spacing: 1px;
 }
 
 .review-date {
-    color: #78716c;
+    color: var(--muted);
     font-size: 0.78rem;
     margin-left: auto;
 }
 
 .review-comment-text {
-    color: #a09080;
+    color: var(--muted);
     font-size: 0.88rem;
     margin: 0.25rem 0 0;
     line-height: 1.5;
 }
 
 .no-reviews {
-    color: #78716c;
+    color: var(--muted);
     font-size: 0.9rem;
     text-align: center;
     padding: 1rem 0;

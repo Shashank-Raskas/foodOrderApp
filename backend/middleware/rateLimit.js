@@ -11,6 +11,9 @@
  */
 export function rateLimit({ windowMs, max, message, key = (req) => req.ip }) {
   const hits = new Map();
+  // End-to-end tests sign up many accounts from one machine; they raise every limit with
+  // RATE_LIMIT_SCALE (e.g. 100). Not set in production, so the limits stay as written.
+  const limit = max * (Number(process.env.RATE_LIMIT_SCALE) || 1);
 
   // Forget finished windows so the map doesn't grow without bound
   setInterval(() => {
@@ -32,7 +35,7 @@ export function rateLimit({ windowMs, max, message, key = (req) => req.ip }) {
     }
     entry.count++;
 
-    if (entry.count > max) {
+    if (entry.count > limit) {
       res.setHeader('Retry-After', Math.ceil((entry.resetAt - now) / 1000));
       return res.status(429).json({ message });
     }

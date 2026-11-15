@@ -34,6 +34,30 @@ test.describe('browsing as a guest', () => {
     for (const text of results) expect(text).toContain('biryani');
   });
 
+  test('searching from the home page opens the menu filtered', async ({ page }) => {
+    await page.goto('/');
+    await page.getByLabel('Search for dishes').fill('biryani');
+    await page.getByRole('button', { name: 'Find Food' }).click();
+    await expect(page).toHaveURL('/menu');
+    await expect(page.locator('.header-search-input')).toHaveValue('biryani');
+    const names = page.locator('li.meal-item h3');
+    await expect(names.first()).toContainText(/biryani/i);
+    for (const text of await page.locator('li.meal-item').allTextContents()) expect(text.toLowerCase()).toContain('biryani');
+  });
+
+  test('category tiles open the menu for that food', async ({ page }) => {
+    await page.goto('/');
+    // The category tile (the hero also has a "Pizza" quick-search chip)
+    await page.locator('.cat-pill', { hasText: 'Pizza' }).click();
+    await expect(page.locator('.header-search-input')).toHaveValue('pizza');
+    await expect(page.getByRole('heading', { name: 'Margherita Pizza' })).toBeVisible();
+
+    await page.goto('/');
+    await page.locator('.cat-pill', { hasText: 'Desserts' }).click();
+    await expect(page.getByRole('heading', { name: 'Tiramisu' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Mac & Cheese', exact: true })).toHaveCount(0);
+  });
+
   test('meal detail page shows the meal and the reviews section', async ({ page }) => {
     await page.goto('/meal/m1');
     await expect(page.getByRole('heading', { name: 'Mac & Cheese' })).toBeVisible();

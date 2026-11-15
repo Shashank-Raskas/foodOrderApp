@@ -6,8 +6,10 @@ import { currencyFormatter } from '../util/formatting';
 import AuthContext from './store/AuthContext';
 import UserProgressContext from './store/UserProgressContext';
 import CartContext from './store/CartContext';
+import SearchContext from './store/SearchContext';
 import './LandingPage.css';
 import useThrottle from '../hooks/useThrottle';
+import { isVegMeal } from '../util/meal';
 
 const requestConfig = {};
 
@@ -49,7 +51,9 @@ export default function LandingPage() {
   const authCtx = useContext(AuthContext);
   const userProgressCtx = useContext(UserProgressContext);
   const cartCtx = useContext(CartContext);
+  const { setSearchTerm } = useContext(SearchContext);
   const { data: meals } = useHttp(API_ENDPOINTS.MEALS, requestConfig, []);
+  const [heroQuery, setHeroQuery] = useState('');
 
   // pick 6 featured meals (prefer chef-special first)
   const featured = meals
@@ -58,14 +62,29 @@ export default function LandingPage() {
     .slice(0, 6);
 
   // categories we can surface
+  // Each opens the menu already filtered: `search` fills the menu search box, `category` ticks a category filter
   const categories = [
-    { icon: '🍕', label: 'Pizza & Italian', filter: 'entrees' },
-    { icon: '🍛', label: 'Indian Curries', filter: 'entrees' },
-    { icon: '🍣', label: 'Sushi & Asian', filter: 'entrees' },
-    { icon: '🥗', label: 'Salads & Bowls', filter: 'sides' },
-    { icon: '🍰', label: 'Desserts', filter: 'desserts' },
-    { icon: '🍔', label: 'Burgers', filter: 'entrees' },
+    { label: 'Biryani', image: 'images/chicken-biryani.jpg', search: 'biryani' },
+    { label: 'Pizza', image: 'images/margherita-pizza.jpg', search: 'pizza' },
+    { label: 'Curries', image: 'images/butter-chicken.jpg', search: 'curry' },
+    { label: 'Burgers', image: 'images/veggie-burger.jpg', search: 'burger' },
+    { label: 'Noodles', image: 'images/pad-thai.jpg', search: 'noodle' },
+    { label: 'Paneer', image: 'images/paneer-tikka.jpg', search: 'paneer' },
+    { label: 'Salads', image: 'images/greek-salad.jpg', search: 'salad' },
+    { label: 'Desserts', image: 'images/tiramisu.jpg', category: 'desserts' },
   ];
+
+  const popularSearches = ['Biryani', 'Pizza', 'Paneer', 'Burger', 'Dessert'];
+
+  function openMenu({ search = '', category } = {}) {
+    setSearchTerm(search);
+    navigate('/menu', category ? { state: { category } } : undefined);
+  }
+
+  function handleHeroSearch(e) {
+    e.preventDefault();
+    openMenu({ search: heroQuery.trim() });
+  }
 
   const stats = [
     { value: '75+', label: 'Menu Items' },
@@ -164,49 +183,82 @@ export default function LandingPage() {
     <div className="landing">
       {/* ═══════════ HERO ═══════════ */}
       <section className="hero">
-        <div className="hero-bg" style={{ transform: `translateY(${scrollY * 0.35}px)` }}>
-          {/* 4 floating food images for decoration */}
-          {featured.slice(0, 4).map((m, i) => (
-            <img
-              key={m.id}
-              src={`${API_URL}/${m.image}`}
-              alt=""
-              className={`hero-float hero-float-${i + 1}`}
-              loading="eager"
-            />
-          ))}
-        </div>
+        <div className="hero-bg" aria-hidden="true" />
 
-        <div className="hero-overlay" />
+        <div className="hero-inner">
+          <div className="hero-content">
+            <span className="hero-badge">🔥 #1 Food Delivery in Town</span>
+            <h1 className="hero-title">
+              Extraordinary Flavors,<br />
+              <span className="hero-highlight">Delivered to You</span>
+            </h1>
+            <p className="hero-sub">
+              From sizzling biryanis to decadent desserts — freshly prepared by master chefs
+              and delivered to your doorstep in minutes.
+            </p>
 
-        <div className="hero-content">
-          <span className="hero-badge">🔥 #1 Food Delivery in Town</span>
-          <h1 className="hero-title">
-            Extraordinary Flavors,<br />
-            <span className="hero-highlight">Delivered to You</span>
-          </h1>
-          <p className="hero-sub">
-            From sizzling biryanis to decadent desserts — freshly prepared by master chefs
-            and delivered to your doorstep in minutes.
-          </p>
-          <div className="hero-actions">
-            <button className="hero-btn hero-btn-primary" onClick={() => navigate('/menu')}>
-              Explore Menu
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </button>
-            <button className="hero-btn hero-btn-ghost" onClick={handleOrderNow}>
-              Order Now
-            </button>
+            {/* Search straight from the hero, like a delivery app — opens the menu with the term filled in */}
+            <form className="hero-search" role="search" onSubmit={handleHeroSearch}>
+              <svg className="hero-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input
+                className="hero-search-input"
+                type="search"
+                aria-label="Search for dishes"
+                placeholder="Search for biryani, pizza, desserts…"
+                value={heroQuery}
+                onChange={(e) => setHeroQuery(e.target.value)}
+              />
+              <button type="submit" className="hero-search-btn">Find Food</button>
+            </form>
+            <div className="hero-popular">
+              <span>Popular:</span>
+              {popularSearches.map((term) => (
+                <button key={term} type="button" className="hero-popular-chip" onClick={() => openMenu({ search: term })}>
+                  {term}
+                </button>
+              ))}
+            </div>
+
+            <div className="hero-actions">
+              <button className="hero-btn hero-btn-primary" onClick={() => openMenu()}>
+                Explore Menu
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </button>
+              <button className="hero-btn hero-btn-ghost" onClick={handleOrderNow}>
+                Order Now
+              </button>
+            </div>
+
+            {/* stats strip */}
+            <div className="hero-stats">
+              {stats.map((s) => (
+                <div key={s.label} className="hero-stat">
+                  <span className="hero-stat-value">{s.value}</span>
+                  <span className="hero-stat-label">{s.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* stats strip */}
-          <div className="hero-stats">
-            {stats.map((s) => (
-              <div key={s.label} className="hero-stat">
-                <span className="hero-stat-value">{s.value}</span>
-                <span className="hero-stat-label">{s.label}</span>
-              </div>
+          <div className="hero-visual" aria-hidden="true" style={{ transform: `translateY(${scrollY * 0.08}px)` }}>
+            {/* 4 floating food images for decoration */}
+            {featured.slice(0, 4).map((m, i) => (
+              <img
+                key={m.id}
+                src={`${API_URL}/${m.image}`}
+                alt=""
+                className={i === 0 ? 'hero-plate' : `hero-float hero-float-${i}`}
+                loading="eager"
+              />
             ))}
+            <div className="hero-chip hero-chip-time">
+              <span className="hero-chip-icon">⏱️</span>
+              <div><strong>30 min</strong><span>Avg. delivery</span></div>
+            </div>
+            <div className="hero-chip hero-chip-rating">
+              <span className="hero-chip-icon">⭐</span>
+              <div><strong>4.9 rating</strong><span>10K+ orders delivered</span></div>
+            </div>
           </div>
         </div>
       </section>
@@ -218,7 +270,7 @@ export default function LandingPage() {
           <span className="promo-tag">NEW USER OFFER</span>
           <h3>Get <span className="promo-highlight">60% OFF</span> on your first order!</h3>
           <p>Up to ₹250 discount. Use code <strong className="promo-code-text">WELCOME60</strong> at checkout.</p>
-          <button className="hero-btn hero-btn-primary promo-cta" onClick={() => navigate('/menu')}>
+          <button className="hero-btn hero-btn-primary promo-cta" onClick={() => openMenu()}>
             Order Now
           </button>
         </div>
@@ -234,9 +286,9 @@ export default function LandingPage() {
             <button
               key={c.label}
               className="cat-pill"
-              onClick={() => navigate('/menu')}
+              onClick={() => openMenu({ search: c.search, category: c.category })}
             >
-              <span className="cat-icon">{c.icon}</span>
+              <img className="cat-img" src={`${API_URL}/${c.image}`} alt="" loading="lazy" />
               <span className="cat-label">{c.label}</span>
             </button>
           ))}
@@ -275,7 +327,10 @@ export default function LandingPage() {
                 {meal.isChefSpecial && <span className="feat-badge">Chef&apos;s Special</span>}
               </div>
               <div className="feat-info">
-                <h3>{meal.name}</h3>
+                <h3>
+                  <span className={`veg-mark ${isVegMeal(meal) ? 'veg-mark--veg' : 'veg-mark--nonveg'}`} title={isVegMeal(meal) ? 'Vegetarian' : 'Non-vegetarian'} />
+                  {meal.name}
+                </h3>
                 <p className="feat-desc">{meal.description.slice(0, 70)}...</p>
                 <div className="feat-bottom">
                   <span className="feat-price">{currencyFormatter.format(meal.price)}</span>
@@ -295,7 +350,7 @@ export default function LandingPage() {
           ))}
         </div>
         <div className="feat-more">
-          <button className="hero-btn hero-btn-primary" onClick={() => navigate('/menu')}>
+          <button className="hero-btn hero-btn-primary" onClick={() => openMenu()}>
             View Full Menu
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </button>
@@ -394,7 +449,7 @@ export default function LandingPage() {
             The Flavor Alchemist today.
           </p>
           <div className="cta-btns">
-            <button className="hero-btn hero-btn-primary" onClick={() => navigate('/menu')}>
+            <button className="hero-btn hero-btn-primary" onClick={() => openMenu()}>
               Explore Menu
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </button>

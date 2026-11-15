@@ -56,6 +56,12 @@ describe('rateLimit middleware', () => {
     expect(run(mw).passed).toBe(true);
   });
 
+  it('RATE_LIMIT_SCALE raises the limit (used by the e2e server only)', () => {
+    stubEnv('RATE_LIMIT_SCALE', '3');
+    const mw = rateLimit({ windowMs: 60_000, max: 1, message: 'x' });
+    expect([run(mw).passed, run(mw).passed, run(mw).passed, run(mw).passed]).toEqual([true, true, true, false]);
+  });
+
   it('counts each key separately', () => {
     const mw = rateLimit({ windowMs: 60_000, max: 1, message: 'x' });
     expect(run(mw, { ip: 'a' }).passed).toBe(true);

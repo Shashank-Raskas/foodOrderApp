@@ -38,6 +38,8 @@ export default defineConfig({
         E2E_CONTROL_PORT: String(CONTROL_PORT),
         JWT_SECRET: 'e2e-access-secret-0123456789abcdef',
         JWT_REFRESH_SECRET: 'e2e-refresh-secret-0123456789abcdef',
+        // Every test signs up from the same machine — keep the per-IP limits out of the way
+        RATE_LIMIT_SCALE: '100',
       },
     },
     {

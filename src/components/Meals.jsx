@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import MealItem from "./MealItem";
 import FilterSidebar from "./FilterSidebar";
 import useHttp from "../hooks/useHttp";
@@ -30,7 +30,11 @@ export default function Meals() {
     // Debounce search: input stays responsive, filtering waits 300ms after typing stops
     const debouncedSearch = useDebounce(searchTerm, 300);
     const navigate = useNavigate();
-    const [filters, setFilters] = useState(DEFAULT_FILTERS);
+    const location = useLocation();
+    // The landing page's category tiles can open the menu with a category already ticked
+    const [filters, setFilters] = useState(() =>
+        location.state?.category ? { ...DEFAULT_FILTERS, category: [location.state.category] } : DEFAULT_FILTERS
+    );
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);

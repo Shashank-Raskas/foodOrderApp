@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import { cleanup, configure } from '@testing-library/react';
 import { restoreStubs } from './stubs';
+import { invalidateCache } from '../hooks/useHttp';
 
 // findBy*/waitFor give up after 1s by default, which is too tight when Jest runs several
 // test files in parallel on a slower machine (a full checkout flow types into many fields)
@@ -24,6 +25,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   restoreStubs();
+  invalidateCache(); // useHttp keeps GET responses for 5 minutes — don't let one test's menu leak into the next
   localStorage.clear();
   sessionStorage.clear();
 });

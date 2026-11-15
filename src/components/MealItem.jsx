@@ -5,6 +5,7 @@ import FavoritesContext from "./store/FavoritesContext"
 import AuthContext from "./store/AuthContext"
 import UserProgressContext from "./store/UserProgressContext"
 import { API_URL } from "../config/api"
+import { isVegMeal } from "../util/meal"
 
 export default function MealItem({meal, onViewDetail}) {
 
@@ -65,6 +66,7 @@ export default function MealItem({meal, onViewDetail}) {
                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                 </svg>
             </button>
+            {meal.isChefSpecial && <span className="meal-item-badge">Chef&apos;s Special</span>}
             <img src={`${API_URL}/${meal.image}`} alt={meal.name} loading="lazy"
                 width="400" height="300"
                 decoding="async"
@@ -74,11 +76,14 @@ export default function MealItem({meal, onViewDetail}) {
                 style={{ cursor: onViewDetail ? 'pointer' : 'default' }}
             />
             <div className="meal-item-body" onClick={() => onViewDetail && onViewDetail(meal)} style={{ cursor: onViewDetail ? 'pointer' : 'default' }}>
-                <h3>{meal.name}</h3>
-                <p className="meal-item-price">{currencyFormatter.format(meal.price)}</p>
+                <h3>
+                    <span className={`veg-mark ${isVegMeal(meal) ? 'veg-mark--veg' : 'veg-mark--nonveg'}`} title={isVegMeal(meal) ? 'Vegetarian' : 'Non-vegetarian'} />
+                    {meal.name}
+                </h3>
                 <p className="meal-item-description">{meal.description}</p>
             </div>
             <div className="meal-item-footer">
+                <p className="meal-item-price">{currencyFormatter.format(meal.price)}</p>
                 {!itemInCart ? (
                     <button className="add-to-cart-btn" onClick={handleAddToCart}>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="cart-add-icon">

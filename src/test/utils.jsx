@@ -30,10 +30,12 @@ export function loginAs(user = {}, cart = null) {
 export function mockFetch(routes) {
   const fn = jest.fn(async (url, options = {}) => {
     const method = (options.method || 'GET').toUpperCase();
-    // Most specific match wins, so '/api/admin/meals' beats '/meals'
+    // Most specific match wins, so '/api/admin/meals' beats '/meals'; on a tie the later route wins,
+    // so a test can override a default route by passing its own
     const route = routes
-      .filter(([m, part]) => m === method && String(url).includes(part))
-      .sort((a, b) => b[1].length - a[1].length)[0];
+      .map((r, index) => ({ r, index }))
+      .filter(({ r: [m, part] }) => m === method && String(url).includes(part))
+      .sort((a, b) => b.r[1].length - a.r[1].length || b.index - a.index)[0]?.r;
     if (!route) return jsonResponse({ message: `No mock for ${method} ${url}` }, 404);
     const body = options.body ? JSON.parse(options.body) : undefined;
     const result = await route[2](body, String(url), options);

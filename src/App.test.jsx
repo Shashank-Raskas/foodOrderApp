@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import App from './App';
 import { loginAs, mockFetch, sampleMeals } from './test/utils';
@@ -19,6 +20,7 @@ describe('routing', () => {
     renderApp('/this/does/not/exist');
     expect(await screen.findByText('404 Not Found')).toBeInTheDocument();
     expect(screen.getByText('Sorry, the page you requested does not exist.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Browse the menu' })).toHaveAttribute('href', '/menu');
   });
 
   it('loads lazily-split pages', async () => {
@@ -63,6 +65,39 @@ describe('routing', () => {
     expect(screen.getByText('Users (1)')).toBeInTheDocument();
     expect(screen.getByText('Menu (2)')).toBeInTheDocument();
     expect(screen.getAllByText('₹630.00').length).toBeGreaterThan(0);
+  });
+});
+
+describe('landing page → menu', () => {
+  const dessert = { ...sampleMeals[0], id: 'm9', name: 'Tiramisu', category: 'desserts', description: 'Coffee-soaked layers' };
+
+  it('the hero search opens the menu filtered by the search term', async () => {
+    const user = userEvent.setup();
+    renderApp('/');
+    await user.type(await screen.findByLabelText('Search for dishes'), 'pizza');
+    await user.click(screen.getByRole('button', { name: 'Find Food' }));
+
+    // Menu page, search box filled in, only matching dishes
+    expect(await screen.findByPlaceholderText('Search meals... (Ctrl+K)')).toHaveValue('pizza');
+    await waitFor(() => expect(screen.queryByText('Mac & Cheese')).not.toBeInTheDocument());
+    expect(screen.getByText('Margherita Pizza')).toBeInTheDocument();
+  });
+
+  it('a category tile opens the menu with that category ticked', async () => {
+    const user = userEvent.setup();
+    renderApp('/', [['GET', '/meals', () => [...sampleMeals, dessert]]]);
+    await user.click(await screen.findByRole('button', { name: 'Desserts' }));
+
+    expect(await screen.findByText('Tiramisu')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText('Mac & Cheese')).not.toBeInTheDocument());
+  });
+
+  it('menu cards show a veg / non-veg marker', async () => {
+    renderApp('/menu', [['GET', '/meals', () => [sampleMeals[0], { ...sampleMeals[1], id: 'm5', name: 'Chicken Tikka', protein: 'chicken' }]]]);
+    const vegCard = (await screen.findByText('Mac & Cheese')).closest('li');
+    const nonVegCard = screen.getByText('Chicken Tikka').closest('li');
+    expect(vegCard.querySelector('.veg-mark--veg')).toHaveAttribute('title', 'Vegetarian');
+    expect(nonVegCard.querySelector('.veg-mark--nonveg')).toHaveAttribute('title', 'Non-vegetarian');
   });
 });
 

@@ -1,5 +1,5 @@
 import { useContext, useState, useEffect, lazy, Suspense } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, Link } from "react-router-dom";
 import Cart from "./components/Cart";
 import Checkout from "./components/Checkout";
 import Header from "./components/Header";
@@ -118,7 +118,13 @@ function AppContent() {
         {/* Handle Render redirect to /index.html */}
         <Route path="/index.html" element={<Navigate to="/" replace />} />
         {/* Catch-all 404 route */}
-        <Route path="*" element={<Error title="404 Not Found" message="Sorry, the page you requested does not exist." />} />
+        <Route path="*" element={
+          <div className="not-found-page">
+            <span className="not-found-emoji" aria-hidden="true">🍽️</span>
+            <Error title="404 Not Found" message="Sorry, the page you requested does not exist." />
+            <Link to="/menu" className="hero-btn hero-btn-primary">Browse the menu</Link>
+          </div>
+        } />
       </Routes>
       </Suspense>
       {/* Global modals — always available regardless of route */}
