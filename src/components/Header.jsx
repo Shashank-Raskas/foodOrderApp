@@ -6,6 +6,16 @@ import FavoritesContext from './store/FavoritesContext';
 import UserProgressContext from './store/UserProgressContext';
 import AuthContext from './store/AuthContext';
 import SearchContext from './store/SearchContext';
+import useTheme from '../hooks/useTheme';
+
+function ThemeIcon({ theme }) {
+    // Shows what you'll switch to: a moon in light mode, a sun in dark mode
+    return theme === 'light' ? (
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    ) : (
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+    );
+}
 
 export default function Header() {
     const cartCtx = useContext(CartContext);
@@ -19,6 +29,8 @@ export default function Header() {
     const searchInputRef = useRef(null);
     const navigate = useNavigate();
     const location = useLocation();
+    const { theme, toggleTheme } = useTheme();
+    const themeLabel = theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme';
 
     const totalCartItems = cartCtx.items.reduce((total, item) => total + item.quantity, 0);
     const userInitial = authCtx.user?.name?.[0]?.toUpperCase() || '?';
@@ -107,6 +119,14 @@ export default function Header() {
                         ⚙️ Admin Dashboard
                     </button>
                 )}
+                {/* Theme switch inside the hamburger menu (phones/tablets — no room in the header bar) */}
+                <button
+                    className="header-nav-link header-nav-theme-mobile"
+                    onClick={toggleTheme}
+                    aria-label={themeLabel}
+                >
+                    <ThemeIcon theme={theme} /> {theme === 'light' ? 'Dark mode' : 'Light mode'}
+                </button>
             </nav>
 
             {/* Search bar — only on menu page */}
@@ -132,6 +152,9 @@ export default function Header() {
 
             {/* Right side actions */}
             <div className="header-actions">
+                <button className="theme-toggle" onClick={toggleTheme} aria-label={themeLabel} title={themeLabel}>
+                    <ThemeIcon theme={theme} />
+                </button>
                 {authCtx.isLoggedIn ? (
                     <>
                         {/* Shopping Cart Icon */}

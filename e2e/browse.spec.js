@@ -34,6 +34,23 @@ test.describe('browsing as a guest', () => {
     for (const text of results) expect(text).toContain('biryani');
   });
 
+  test('dark theme by default; the toggle switches to light and remembers it', async ({ page }) => {
+    const pageColour = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    await page.goto('/');
+    await expect(page.locator('html')).not.toHaveAttribute('data-theme', /.+/);
+    expect(await pageColour()).toBe('rgb(17, 16, 14)');
+
+    await page.getByRole('button', { name: 'Switch to light theme' }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    expect(await pageColour()).toBe('rgb(248, 246, 243)');
+
+    // Survives a reload (applied before the first paint by index.html)
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    await page.getByRole('button', { name: 'Switch to dark theme' }).click();
+    expect(await pageColour()).toBe('rgb(17, 16, 14)');
+  });
+
   test('searching from the home page opens the menu filtered', async ({ page }) => {
     await page.goto('/');
     await page.getByLabel('Search for dishes').fill('biryani');

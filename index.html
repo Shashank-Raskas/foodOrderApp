@@ -7,6 +7,16 @@
     <link rel="preconnect" href="https://orderapp-backend-czwe.onrender.com" crossorigin />
     <link rel="dns-prefetch" href="https://orderapp-backend-czwe.onrender.com" />
     <title>The Flavor Alchemist</title>
+    <meta name="theme-color" content="#11100e" />
+    <script>
+      // Apply the saved colour theme before the first paint (dark unless the visitor chose light)
+      try {
+        if (localStorage.getItem('theme') === 'light') {
+          document.documentElement.dataset.theme = 'light';
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff');
+        }
+      } catch (e) { /* storage unavailable */ }
+    </script>
   </head>
   <body>
     <div id="modal"></div>

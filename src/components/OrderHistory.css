@@ -52,7 +52,7 @@
 }
 
 .error-state {
-    color: #ff6b6b;
+    color: var(--danger);
 }
 
 /* ==================== EMPTY STATE ==================== */
@@ -99,7 +99,7 @@
 }
 
 .order-card:hover {
-    box-shadow: 0 8px 20px rgb(var(--ink-rgb) / 0.15);
+    box-shadow: 0 8px 20px rgb(var(--shadow-rgb) / 0.15);
     border-color: var(--brand);
     transform: translateX(4px);
 }

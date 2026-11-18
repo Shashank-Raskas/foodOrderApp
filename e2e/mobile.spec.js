@@ -21,6 +21,14 @@ test('phone layout: no sideways scrolling, logged out and logged in', async ({ p
   await expect(page.locator('li.meal-item').first()).toBeVisible();
   expect(await pageWidth(page)).toBeLessThanOrEqual(PHONE_WIDTH);
 
+  // On phones the theme switch lives in the hamburger menu
+  await page.getByRole('button', { name: 'Toggle menu' }).click();
+  await page.getByRole('button', { name: 'Switch to light theme' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  // The menu stays open after switching, so the change is visible straight away
+  await page.getByRole('button', { name: 'Switch to dark theme' }).click();
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme', /.+/);
+
   // Logged in, the header also carries the cart and avatar buttons
   await signUpWithPassword(page);
   for (const path of ['/', '/menu', '/meal/m1', '/orders', '/profile', '/favorites']) {

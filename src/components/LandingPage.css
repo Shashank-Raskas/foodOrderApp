@@ -519,7 +519,7 @@
   top: 12px;
   left: 12px;
   background: var(--accent);
-  color: var(--ink);
+  color: var(--on-accent);
   font-size: .7rem;
   font-weight: 800;
   font-family: var(--font-sans);
@@ -781,7 +781,8 @@
   background:
     radial-gradient(circle at 88% 15%, rgb(var(--brand-rgb) / 0.55) 0%, transparent 42%),
     radial-gradient(circle at 8% 100%, rgb(245 165 36 / 0.25) 0%, transparent 40%),
-    var(--ink);
+    var(--cta-bg);
+  border: 1px solid var(--border);
   border-radius: 28px;
   padding: 4rem 3rem;
   box-shadow: var(--shadow-lg);
@@ -910,7 +911,7 @@
   padding: 1.75rem 2rem;
   background:
     radial-gradient(circle at 100% 0%, rgb(255 255 255 / 0.18) 0, transparent 35%),
-    linear-gradient(110deg, var(--brand-700) 0%, var(--brand) 60%, #e0582a 100%);
+    linear-gradient(110deg, #9c3013 0%, #d4431c 60%, #e0582a 100%)  /* fixed paprika in both themes: white text stays readable */;
   border-radius: var(--radius-lg);
   position: relative;
   overflow: hidden;
@@ -959,9 +960,9 @@
   font-size: 0.95rem;
 }
 .promo-code-text {
-  color: var(--brand);
+  color: #d4431c;
   background: #fff;
-  border: 1.5px dashed var(--brand-100);
+  border: 1.5px dashed #ffd3c2;
   padding: 2px 10px;
   border-radius: 6px;
   font-size: 1rem;
@@ -971,10 +972,10 @@
   font-size: 0.9rem !important;
   padding: 10px 26px !important;
   background: #fff !important;
-  color: var(--brand) !important;
+  color: #d4431c !important;
   box-shadow: none !important;
 }
-.promo-cta:hover { background: var(--brand-50) !important; }
+.promo-cta:hover { background: #fff4ef !important; }
 
 /* ═══════════════════════════════════════════════════════════════════
    WHY CHOOSE US

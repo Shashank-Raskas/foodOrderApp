@@ -89,7 +89,7 @@
 }
 
 .favorite-item:hover {
-    box-shadow: 0 6px 16px rgb(var(--ink-rgb) / 0.15);
+    box-shadow: 0 6px 16px rgb(var(--shadow-rgb) / 0.15);
     transform: translateX(4px);
     border-color: var(--brand);
 }
@@ -99,7 +99,7 @@
     height: 80px;
     object-fit: cover;
     border-radius: 10px;
-    box-shadow: 0 2px 8px rgb(var(--ink-rgb) / 0.072);
+    box-shadow: 0 2px 8px rgb(var(--shadow-rgb) / 0.072);
     flex-shrink: 0;
 }
 

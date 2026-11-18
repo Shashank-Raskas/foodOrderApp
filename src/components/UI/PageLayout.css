@@ -36,7 +36,7 @@
 
 .page-back-btn:hover {
     background: var(--surface-3);
-    color: #f0c78a;
+    color: var(--brand);
     transform: translateX(-2px);
 }
 
@@ -56,7 +56,7 @@
 .page-content {
     background: linear-gradient(135deg, var(--surface) 0%, var(--surface) 100%);
     border-radius: 16px;
-    box-shadow: 0 8px 32px rgb(var(--ink-rgb) / 0.12);
+    box-shadow: 0 8px 32px rgb(var(--shadow-rgb) / 0.12);
     overflow: hidden;
 }
 
@@ -140,7 +140,7 @@
 }
 
 .meal-detail-error button:hover {
-    background: #f0c78a;
+    background: var(--brand);
 }
 
 /* ==================== PROFILE PAGE SPECIFIC ==================== */

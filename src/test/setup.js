@@ -26,6 +26,7 @@ afterEach(() => {
   cleanup();
   restoreStubs();
   invalidateCache(); // useHttp keeps GET responses for 5 minutes — don't let one test's menu leak into the next
+  delete document.documentElement.dataset.theme;
   localStorage.clear();
   sessionStorage.clear();
 });
