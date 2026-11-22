@@ -86,6 +86,26 @@ export const LLM = {
   get fastFallbackModel() {
     return process.env.GROQ_FAST_MODEL || 'openai/gpt-oss-20b';
   },
+  // Answer models, picked by a streaming test on the free tier (time to first token):
+  // gemini-3.1-flash-lite ~0.6 s; gemini-3.5-flash ~18 s; gemini-3.8-flash 503 "high demand";
+  // Groq qwen3.8-27b ~0.3 s with clean [n] citations (gpt-oss-120b writes 【n】 instead).
+  get answerModel() {
+    return process.env.GEMINI_ANSWER_MODEL || 'gemini-3.1-flash-lite';
+  },
+  get answerFallbackModel() {
+    return process.env.GROQ_ANSWER_MODEL || 'qwen/qwen3.8-27b';
+  },
+};
+
+// /api/chat limits. Small on purpose: they bound cost (free-tier quotas), latency and prompt size.
+export const CHAT = {
+  maxMessageChars: 500,
+  maxHistoryMessages: 6, // last 3 exchanges are enough to resolve "it" / "the cheaper one"
+  maxHistoryChars: 1500, // per history message
+  maxSourceChars: 1500, // per retrieved document in the prompt
+  maxOutputTokens: 500,
+  answerTimeoutMs: 30000, // whole request, including retrieval
+  support: { email: 'flavoralchemist9@gmail.com', phone: '040-4857-2936', hours: '9:00 AM – 11:00 PM IST' },
 };
 
 // Anything that changes stored vectors is part of the signature; a different signature means the

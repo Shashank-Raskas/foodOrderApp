@@ -5,6 +5,7 @@ import dns from 'node:dns';
 // Force IPv4 for all DNS lookups — Render doesn't support outbound IPv6
 dns.setDefaultResultOrder('ipv4first');
 import { createApp } from './createApp.js';
+import { warmUp } from './rag/chat/index.js';
 
 // The Express app (middleware + routes) is built in createApp.js so tests can use it without listening
 const app = createApp();
@@ -12,6 +13,12 @@ const app = createApp();
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+
+  // Load the chatbot's local models in the background, so the first customer doesn't wait for them.
+  // Does nothing if the chatbot's keys aren't configured.
+  warmUp()
+    .then((ms) => ms && console.log(`[Chat] Models warmed up in ${ms} ms, RSS ${Math.round(process.memoryUsage().rss / 1048576)} MB`))
+    .catch((err) => console.warn('[Chat] Warm-up failed (the first chat will load the models):', err.message));
 
   // ===================== Keep-Alive Self-Ping =====================
   // Ping ourselves every 10 minutes to prevent Render free-tier spin-down.

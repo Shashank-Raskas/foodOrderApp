@@ -7,6 +7,7 @@ import userRoutes from './routes/user.js';
 import orderRoutes from './routes/orders.js';
 import mealRoutes from './routes/meals.js';
 import adminRoutes from './routes/admin.js';
+import chatRoutes from './routes/chat.js';
 
 /**
  * Build the Express app (middleware + routes) without starting a server.
@@ -92,6 +93,7 @@ export function createApp() {
   app.use(userRoutes);   // profile, password, loyalty, addresses, contact
   app.use(orderRoutes);  // place order, order history
   app.use(adminRoutes);  // /api/admin/*
+  app.use(chatRoutes);   // POST /api/chat (support chatbot, streamed)
 
   // ===================== Health Check =====================
   app.get('/api/health', (req, res) => {

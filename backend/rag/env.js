@@ -5,7 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const backendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-dotenv.config({ path: path.join(backendDir, '.env.local'), quiet: true });
+// Tests run offline with fakes: never pick up the real keys from .env.local
+if (process.env.NODE_ENV !== 'test') dotenv.config({ path: path.join(backendDir, '.env.local'), quiet: true });
 dotenv.config({ path: path.join(backendDir, `.env.${process.env.NODE_ENV || 'development'}`), quiet: true });
 
 export function requireEnv(name) {

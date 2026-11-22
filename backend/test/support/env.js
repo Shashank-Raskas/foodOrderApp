@@ -3,6 +3,8 @@
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-access-secret-0123456789abcdef';
 process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-0123456789abcdef';
-for (const key of ['RENDER', 'RENDER_EXTERNAL_URL', 'BREVO_API_KEY', 'TWILIO_ACCOUNT_SID', 'ALLOWED_ORIGINS', 'FRONTEND_URL']) {
+// The RAG chatbot's keys too, so no test can reach Qdrant, Gemini or Groq
+for (const key of ['RENDER', 'RENDER_EXTERNAL_URL', 'BREVO_API_KEY', 'TWILIO_ACCOUNT_SID', 'ALLOWED_ORIGINS', 'FRONTEND_URL',
+  'QDRANT_URL', 'QDRANT_API_KEY', 'GEMINI_API_KEY', 'GROQ_API_KEY']) {
   delete process.env[key];
 }
