@@ -15,11 +15,15 @@ async function loginAsAdmin(page) {
   for (let i = 0; i < 6; i++) await boxes.nth(i).fill(otp[i]);
   await modal.getByRole('button', { name: 'Verify OTP' }).click();
   const nameField = modal.getByLabel('Full Name');
-  if (await nameField.isVisible().catch(() => false)) {
+  const avatar = page.locator('.profile-avatar-btn');
+  // Wait for the verify response first: checking isVisible() straight away raced it, and on a slow
+  // run the name prompt appeared just after the check, so the name step was skipped
+  await expect(avatar.or(nameField)).toBeVisible();
+  if (await nameField.isVisible()) {
     await nameField.fill('Admin');
     await modal.getByRole('button', { name: 'Continue' }).click();
   }
-  await expect(page.locator('.profile-avatar-btn')).toBeVisible();
+  await expect(avatar).toBeVisible();
 }
 
 test('normal users cannot open the admin dashboard', async ({ page }) => {
