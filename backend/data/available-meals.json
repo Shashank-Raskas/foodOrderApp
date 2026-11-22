@@ -1950,9 +1950,9 @@
     "description": "Wok-tossed rice with scrambled eggs, spring onions, soy sauce, and a hint of sesame oil. Simple and satisfying.",
     "image": "images/fried-rice.jpg",
     "category": "entrees",
-    "dietary": ["vegetarian"],
+    "dietary": [],
     "spiceLevel": "non-spicy",
-    "protein": "vegetarian",
+    "protein": "egg",
     "servingSize": "individual",
     "isChefSpecial": false,
     "availableTime": "all-day"
@@ -2216,9 +2216,9 @@
     "description": "Boiled eggs simmered in a tangy Hyderabadi gravy of tomatoes, peanuts, sesame seeds, and coconut.",
     "image": "images/chicken-curry.jpg",
     "category": "entrees",
-    "dietary": ["vegetarian"],
+    "dietary": [],
     "spiceLevel": "hot",
-    "protein": "vegetarian",
+    "protein": "egg",
     "servingSize": "individual",
     "isChefSpecial": false,
     "availableTime": "all-day"

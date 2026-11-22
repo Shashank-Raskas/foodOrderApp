@@ -48,6 +48,7 @@ const FILTER_SECTIONS = [
       { value: "beef", label: "Beef / Lamb" },
       { value: "fish", label: "Fish / Seafood" },
       { value: "pork", label: "Pork" },
+      { value: "egg", label: "Egg" },
       { value: "vegetarian", label: "Tofu / Vegetarian" },
     ],
   },
