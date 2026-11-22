@@ -8,6 +8,7 @@ import Error from "./Error";
 import { API_ENDPOINTS } from "../config/api";
 import SearchContext from "./store/SearchContext";
 import AuthContext from "./store/AuthContext";
+import { matchesProteinFilter } from "../util/meal";
 
 const requestConfig = {};
 const MEALS_PER_PAGE = 12;
@@ -95,8 +96,9 @@ export default function Meals() {
             }
 
             // Protein
+            // ("Beef / Lamb" and "Fish / Seafood" each cover two stored values)
             if (filters.protein.length > 0) {
-                if (!filters.protein.includes(meal.protein)) return false;
+                if (!matchesProteinFilter(filters.protein, meal.protein)) return false;
             }
 
             // Serving Size

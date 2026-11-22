@@ -727,7 +727,7 @@
     "category": "entrees",
     "dietary": [],
     "spiceLevel": "hot",
-    "protein": "beef",
+    "protein": "lamb",
     "servingSize": "individual",
     "isChefSpecial": true,
     "availableTime": "all-day"
@@ -865,7 +865,7 @@
       "gluten-free"
     ],
     "spiceLevel": "mild",
-    "protein": "beef",
+    "protein": "lamb",
     "servingSize": "individual",
     "isChefSpecial": true,
     "availableTime": "all-day"
@@ -1168,7 +1168,7 @@
     "category": "entrees",
     "dietary": [],
     "spiceLevel": "hot",
-    "protein": "beef",
+    "protein": "lamb",
     "servingSize": "individual",
     "isChefSpecial": true,
     "availableTime": "all-day"

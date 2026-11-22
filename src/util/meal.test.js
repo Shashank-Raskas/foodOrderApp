@@ -1,4 +1,22 @@
-import { isVegMeal } from './meal';
+import { isVegMeal, matchesProteinFilter } from './meal';
+
+describe('matchesProteinFilter', () => {
+  it('"Beef / Lamb" and "Fish / Seafood" each match both stored values', () => {
+    expect(matchesProteinFilter(['beef'], 'lamb')).toBe(true);
+    expect(matchesProteinFilter(['beef'], 'beef')).toBe(true);
+    expect(matchesProteinFilter(['fish'], 'seafood')).toBe(true);
+    expect(matchesProteinFilter(['fish'], 'fish')).toBe(true);
+    expect(matchesProteinFilter(['beef'], 'chicken')).toBe(false);
+  });
+
+  it('other options match exactly; several options combine; nothing ticked matches all', () => {
+    expect(matchesProteinFilter(['egg'], 'egg')).toBe(true);
+    expect(matchesProteinFilter(['egg'], 'vegetarian')).toBe(false);
+    expect(matchesProteinFilter(['chicken', 'fish'], 'seafood')).toBe(true);
+    expect(matchesProteinFilter([], 'pork')).toBe(true);
+    expect(matchesProteinFilter(undefined, 'pork')).toBe(true);
+  });
+});
 
 describe('isVegMeal', () => {
   it('uses the protein field when there is one', () => {
