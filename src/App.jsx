@@ -14,6 +14,7 @@ import MealDetail from "./components/MealDetail";
 import Error from "./components/Error";
 import ScrollToTop from "./components/UI/ScrollToTop";
 import ProtectedRoute from "./components/UI/ProtectedRoute";
+import ChatWidget from "./components/chat/ChatWidget";
 import { CartContextProvider } from "./components/store/CartContext";
 import { UserProgressContextProvider } from "./components/store/UserProgressContext";
 import { AuthContextProvider } from "./components/store/AuthContext";
@@ -136,6 +137,7 @@ function AppContent() {
         </>
       )}
       <ScrollToTopButton />
+      <ChatWidget />
       <Footer />
     </>
   );

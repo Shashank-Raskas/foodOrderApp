@@ -1,9 +1,13 @@
 // Browser APIs that jsdom (Jest's fake browser) doesn't provide, needed before app modules load
 import { TextEncoder, TextDecoder } from 'node:util';
+import { ReadableStream } from 'node:stream/web';
 
 // react-router uses these
 globalThis.TextEncoder ??= TextEncoder;
 globalThis.TextDecoder ??= TextDecoder;
+
+// The chat reads its streamed answer from a fetch() body
+globalThis.ReadableStream ??= ReadableStream;
 
 // The landing page uses IntersectionObserver for scroll animations
 globalThis.IntersectionObserver ??= class {
