@@ -49,7 +49,7 @@ export function chunkMeal(meal) {
   const price = Number(meal.price);
   const noun = CATEGORY_NOUN[meal.category] || `${String(meal.category || 'menu').toLowerCase()} item`;
   const facts = [
-    `${meal.name} is a ${veg ? 'vegetarian (veg)' : 'non-vegetarian (non-veg)'} ${noun} priced at ₹${price}.`,
+    `${meal.name} is ${veg ? 'a vegetarian (veg)' : meal.protein === 'egg' ? 'an egg-based (non-veg)' : 'a non-vegetarian (non-veg)'} ${noun} priced at ₹${price}.`,
     meal.dietary?.length ? `Dietary: ${meal.dietary.join(', ')}.` : null,
     meal.spiceLevel ? `Spice level: ${meal.spiceLevel}.` : null,
     meal.protein ? `Protein: ${meal.protein}.` : null,

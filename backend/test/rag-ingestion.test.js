@@ -144,6 +144,12 @@ describe('chunkMeal', () => {
     });
   });
 
+  it('describes egg dishes as egg-based non-veg', () => {
+    const chunk = chunkMeal({ ...meal, name: 'Egg Curry', protein: 'egg', dietary: [] });
+    expect(chunk.metadata.isVeg).toBe(false);
+    expect(chunk.content).toContain('Egg Curry is an egg-based (non-veg)');
+  });
+
   it('marks meat dishes non-veg even when other dietary tags exist', () => {
     const chunk = chunkMeal({ ...meal, protein: 'chicken', dietary: ['gluten-free'] });
     expect(chunk.metadata.isVeg).toBe(false);
