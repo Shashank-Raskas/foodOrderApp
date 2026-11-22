@@ -267,6 +267,25 @@ describe('retrieval pipeline', () => {
     expect(Object.keys(diverse.timings)).toContain('mmr');
   });
 
+  it('reranks only the top N candidates, and only for the configured intents', async () => {
+    const seen = [];
+    const scores = (q, t) => {
+      seen.push(t);
+      return 1;
+    };
+    const { pipeline } = await pipelineWith({ analysis: { standaloneQuestion: 'spicy veg biryani soup', intent: 'menu' }, options: { rerankCandidates: 2 }, scores });
+    const out = await pipeline.invoke({ question: 'q' });
+    expect(seen).toHaveLength(2);
+    expect(out.documents.filter((d) => d.metadata.rerankScore !== undefined)).toHaveLength(2);
+
+    seen.length = 0;
+    const policyOnly = await pipelineWith({ analysis: { standaloneQuestion: 'biryani', intent: 'menu' }, options: { rerankIntents: ['policy'] }, scores });
+    const menu = await policyOnly.pipeline.invoke({ question: 'q' });
+    expect(seen).toHaveLength(0);
+    expect(menu.timings.rerank).toBeUndefined();
+    expect(menu.lowConfidence).toBe(false);
+  });
+
   it('stages can be switched off for ablations', async () => {
     const { client, pipeline } = await pipelineWith({
       analysis: { standaloneQuestion: 'refund', intent: 'policy' },

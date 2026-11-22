@@ -27,6 +27,25 @@ export function createAnswerModel() {
   return primary.withFallbacks([fallback]);
 }
 
+/**
+ * The tool-calling model for the account agent. Returns an object with bindTools(tools), so the
+ * agent binds its per-user tools to both providers and keeps the Gemini → Groq failover.
+ * (Tested: both call the tools correctly, including two tools at once.)
+ */
+export function createToolModel() {
+  const opts = { ...common, maxRetries: 0, temperature: 0 };
+  const primary = new ChatGoogleGenerativeAI({ ...opts, model: LLM.fastModel, maxOutputTokens: CHAT.maxOutputTokens, apiKey: requireEnv('GEMINI_API_KEY') });
+  const fallback = process.env.GROQ_API_KEY
+    ? new ChatGroq({ ...opts, maxRetries: 1, model: LLM.answerFallbackModel, maxTokens: CHAT.maxOutputTokens, apiKey: process.env.GROQ_API_KEY })
+    : null;
+  return {
+    bindTools(tools) {
+      const main = primary.bindTools(tools);
+      return fallback ? main.withFallbacks([fallback.bindTools(tools)]) : main;
+    },
+  };
+}
+
 /** primary.withStructuredOutput(schema), failing over to the fallback model with the same schema. */
 export function structuredWithFallback({ primary, fallback }, schema, name) {
   const main = primary.withStructuredOutput(schema, { name });

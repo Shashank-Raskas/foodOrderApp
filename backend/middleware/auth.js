@@ -31,6 +31,17 @@ export function authenticate(req, res, next) {
 }
 
 /**
+ * Middleware: like `authenticate`, but signing in is optional (used by the chatbot).
+ * No Authorization header → continues as a guest (req.user stays undefined).
+ * A token that is present but expired or invalid → 401, same as `authenticate`, so the frontend
+ * refreshes it instead of the customer silently being treated as a guest.
+ */
+export function optionalAuthenticate(req, res, next) {
+  if (!req.headers.authorization) return next();
+  return authenticate(req, res, next);
+}
+
+/**
  * Middleware: requires the user to have the 'admin' role.
  * Must be used AFTER `authenticate`.
  */

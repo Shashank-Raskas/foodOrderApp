@@ -9,8 +9,10 @@ import { CrossEncoderReranker } from '../retrieval/reranker.js';
 import { AnalysisSchema, createQueryAnalyzer } from '../retrieval/analysis.js';
 import { createRetrievalPipeline } from '../retrieval/pipeline.js';
 import { loadParents } from '../retrieval/parents.js';
-import { createAnswerModel, createFastModels, structuredWithFallback } from '../llm/models.js';
+import { createAnswerModel, createFastModels, createToolModel, structuredWithFallback } from '../llm/models.js';
 import { createAnswerChain } from '../generation/answer.js';
+import { createAccountAgent } from '../graph/accountAgent.js';
+import { createAccountTools } from '../tools/accountTools.js';
 import { createChatService } from './chatService.js';
 
 const REQUIRED = ['QDRANT_URL', 'QDRANT_API_KEY', 'GEMINI_API_KEY'];
@@ -26,7 +28,10 @@ function build() {
   const store = liveStore({ client: createQdrantClient(), embeddings });
   const analyzer = createQueryAnalyzer(structuredWithFallback(createFastModels(), AnalysisSchema, 'query_analysis'));
   const retrieval = createRetrievalPipeline({ store, analyzer, reranker, parents: loadParents });
-  return { embeddings, reranker, service: createChatService({ retrieval, answerChain: createAnswerChain(createAnswerModel()) }) };
+  const toolModel = createToolModel();
+  // A fresh graph per request, with tools bound to that request's signed-in user (cheap: no I/O)
+  const agentFor = (userId) => createAccountAgent({ model: toolModel, tools: createAccountTools({ userId }) });
+  return { embeddings, reranker, service: createChatService({ retrieval, answerChain: createAnswerChain(createAnswerModel()), agentFor }) };
 }
 
 export function getChatService() {

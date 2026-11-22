@@ -109,7 +109,7 @@ describe('chat service', () => {
   it.each([
     ['chitchat', REPLIES.chitchat],
     ['refuse', REPLIES.refuse],
-    ['tool', REPLIES.tool],
+    ['tool', REPLIES.signIn], // guests; signed-in customers get the account agent (rag-agent.test.js)
   ])('%s → a fixed reply, without calling the LLM', async (route, reply) => {
     const neverCalled = RunnableLambda.from(() => {
       throw new Error('LLM should not be called');

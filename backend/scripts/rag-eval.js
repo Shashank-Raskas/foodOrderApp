@@ -64,6 +64,10 @@ const configs = [
   ['+ MMR λ=0.7', viaPipeline(pipelineFor({ mmr: true }, { mmrLambda: 0.7 }))],
   ['+ MMR λ=0.5', viaPipeline(pipelineFor({ mmr: true }, { mmrLambda: 0.5 }))],
   ['rerank, no routing', viaPipeline(pipelineFor({ routeDocTypes: false }))],
+  ['rerank top 10', viaPipeline(pipelineFor({}, { rerankCandidates: 10 }))],
+  ['rerank top 8', viaPipeline(pipelineFor({}, { rerankCandidates: 8 }))],
+  ['rerank top 5', viaPipeline(pipelineFor({}, { rerankCandidates: 5 }))],
+  ['rerank policy only, top 8', viaPipeline(pipelineFor({}, { rerankCandidates: 8, rerankIntents: ['policy'] }))],
 ];
 
 const answerable = golden.filter((q) => q.relevant.length);

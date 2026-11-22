@@ -5,6 +5,7 @@
 // SSE over a normal POST: the browser reads it with fetch() + a stream reader, and the answer
 // appears word by word instead of after the whole LLM call.
 
+import { optionalAuthenticate } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { createRouter, isNonEmptyString } from '../lib/router.js';
 import { getChatService, isChatConfigured } from '../rag/chat/index.js';
@@ -25,7 +26,9 @@ function validate(body) {
   return ok ? null : 'Invalid chat history.';
 }
 
-router.post('/api/chat', burstLimiter, dailyLimiter, async (req, res) => {
+// Signing in is optional: guests can ask about the menu and policies; order and loyalty questions
+// need a valid token (an expired one gets a 401 so the frontend refreshes it).
+router.post('/api/chat', burstLimiter, dailyLimiter, optionalAuthenticate, async (req, res) => {
   if (!isChatConfigured()) return res.status(503).json({ message: 'The chat assistant is not available right now.' });
   const problem = validate(req.body);
   if (problem) return res.status(400).json({ message: problem });
@@ -51,7 +54,7 @@ router.post('/api/chat', burstLimiter, dailyLimiter, async (req, res) => {
 
   try {
     const { message, history = [] } = req.body;
-    for await (const event of getChatService().chat({ message: message.trim(), history, signal })) {
+    for await (const event of getChatService().chat({ message: message.trim(), history, user: req.user ?? null, signal })) {
       if (disconnected.signal.aborted) break;
       send(event);
     }

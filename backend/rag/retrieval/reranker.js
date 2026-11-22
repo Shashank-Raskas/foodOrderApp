@@ -7,7 +7,7 @@
 // so it only re-scores the ~20 candidates hybrid search already found.
 
 import { BaseDocumentCompressor } from '@langchain/core/retrievers/document_compressors';
-import { RERANKER } from '../config.js';
+import { RERANKER, onnxSessionOptions } from '../config.js';
 import { MODEL_CACHE_DIR } from '../env.js';
 
 const sigmoid = (x) => 1 / (1 + Math.exp(-x));
@@ -18,7 +18,7 @@ async function loadCrossEncoder({ model, dtype }) {
   env.cacheDir = MODEL_CACHE_DIR;
   const [tokenizer, net] = await Promise.all([
     AutoTokenizer.from_pretrained(model),
-    AutoModelForSequenceClassification.from_pretrained(model, { dtype }),
+    AutoModelForSequenceClassification.from_pretrained(model, { dtype, session_options: onnxSessionOptions() }),
   ]);
   return async (query, texts) => {
     const inputs = tokenizer(new Array(texts.length).fill(query), { text_pair: texts, padding: true, truncation: true, max_length: 512 });

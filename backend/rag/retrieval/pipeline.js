@@ -33,6 +33,7 @@ export const DEFAULT_STAGES = { filters: true, routeDocTypes: true, rerank: true
 const step = (name, fn) => RunnableLambda.from(fn).withConfig({ runName: name });
 
 export function createRetrievalPipeline({ store, analyzer, reranker = null, parents = null, options = {}, stages = {} }) {
+  // Spreading evaluates RETRIEVAL's getters, so env-tuned values are read when the pipeline is built
   const opts = { ...RETRIEVAL, ...options };
   const use = { ...DEFAULT_STAGES, ...stages };
   if (!reranker) use.rerank = false;
@@ -100,7 +101,12 @@ export function createRetrievalPipeline({ store, analyzer, reranker = null, pare
       return doc;
     });
 
-    if (use.rerank && docs.length) docs = await time('rerank', () => rerank.invoke({ docs, query }, config));
+    const reranked = use.rerank && docs.length && opts.rerankIntents.includes(analysis.intent);
+    if (reranked) {
+      // Rerank the top N fused candidates; the rest keep their fused order after them
+      const head = docs.slice(0, opts.rerankCandidates);
+      docs = [...(await time('rerank', () => rerank.invoke({ docs: head, query }, config))), ...docs.slice(opts.rerankCandidates)];
+    }
     if (use.mmr && docs.length > opts.finalK && vectors.size && [...vectors.values()].every(Boolean)) {
       docs = await time('mmr', () => diversify.invoke({ docs, vectors }, config));
     } else {
@@ -110,7 +116,7 @@ export function createRetrievalPipeline({ store, analyzer, reranker = null, pare
 
     // "I don't know" signal: even the best chunk is a weak match for the question
     const top = docs[0]?.metadata.rerankScore;
-    const thresholdApplies = use.rerank && top !== undefined && opts.minRelevanceIntents.includes(analysis.intent);
+    const thresholdApplies = reranked && top !== undefined && opts.minRelevanceIntents.includes(analysis.intent);
     const lowConfidence = !docs.length || (thresholdApplies && top < opts.minRelevance);
     return { analysis, route, documents: docs, lowConfidence, relaxedFilters: relaxed, timings };
   }).withConfig({ runName: 'Retrieval' });

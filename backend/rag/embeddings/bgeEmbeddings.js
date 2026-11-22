@@ -8,7 +8,7 @@
 // Vectors are L2-normalized, so cosine similarity = dot product.
 
 import { Embeddings } from '@langchain/core/embeddings';
-import { EMBEDDING } from '../config.js';
+import { EMBEDDING, onnxSessionOptions } from '../config.js';
 import { MODEL_CACHE_DIR } from '../env.js';
 
 // Loads the ONNX model on first use only: importing this file costs nothing, which keeps the
@@ -16,7 +16,7 @@ import { MODEL_CACHE_DIR } from '../env.js';
 async function loadExtractor({ model, dtype }) {
   const { pipeline, env } = await import('@huggingface/transformers');
   env.cacheDir = MODEL_CACHE_DIR;
-  return pipeline('feature-extraction', model, { dtype });
+  return pipeline('feature-extraction', model, { dtype, session_options: onnxSessionOptions() });
 }
 
 export class BgeEmbeddings extends Embeddings {

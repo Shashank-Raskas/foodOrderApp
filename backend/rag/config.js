@@ -52,9 +52,28 @@ export const INDEX = {
 // index, so it only re-scores the top candidates from hybrid search. ~23 MB quantized.
 export const RERANKER = { model: 'Xenova/ms-marco-MiniLM-L-6-v2', dtype: 'q8' };
 
+// ONNX Runtime starts one thread per visible core. A Render free instance sees the host's cores
+// but is only allowed a fraction of one CPU, so many threads mostly wait on each other (CPU-quota
+// throttling). One thread there; ONNX's default (all cores) locally. RAG_ONNX_THREADS overrides.
+export function onnxSessionOptions() {
+  const threads = Number(process.env.RAG_ONNX_THREADS) || (process.env.RENDER ? 1 : 0);
+  return threads ? { intraOpNumThreads: threads, interOpNumThreads: 1 } : undefined;
+}
+
 export const RETRIEVAL = {
   prefetchK: 30, // candidates fetched by each of dense and BM25 before fusion
-  candidates: 20, // fused candidates handed to the reranker
+  candidates: 20, // fused candidates kept from hybrid search
+  // Cross-encoder cost is linear in pairs scored, and Render's free instance (~0.1 CPU) took
+  // 13–15 s for 20 pairs (0.3 s locally). So only the top N fused candidates are reranked, and only
+  // for the intents listed (env-tunable without a code change; values chosen with the eval).
+  // Eval (batch 1): top 8 = same Recall@5 as top 20 (96.6%), better MRR (0.972 vs 0.944) and
+  // nDCG@5 (94.8% vs 93.2%), at 40% of the cost; top 5 drops recall to 94.4%.
+  get rerankCandidates() {
+    return Number(process.env.RAG_RERANK_CANDIDATES) || 8;
+  },
+  get rerankIntents() {
+    return (process.env.RAG_RERANK_INTENTS || 'menu,reviews,policy').split(',').map((s) => s.trim()).filter(Boolean);
+  },
   finalK: 5, // documents given to the LLM
   // MMR trade-off: 1 = pure relevance, 0 = pure diversity. Tuned with the eval (batch 1):
   // λ 0.5 / 0.7 / 0.9 cost 9 / 8 / 5 points of Recall@5 versus no MMR, because here the
