@@ -128,9 +128,10 @@ export function normalizeAnalysis(raw, question) {
  *   'llm'  — LLM for every question: best routing and filters (96.6% Recall@5 on batch 1), ~2 s
  *   'auto' — LLM only for follow-ups (there is chat history to resolve), rules otherwise:
  *            93.8% Recall@5 in ~0 ms, and no LLM quota used for standalone questions
- * timeoutMs: an LLM call slower than this falls back (free tiers can stall for tens of seconds).
+ * timeoutMs: the whole LLM step (Gemini's own 2.5 s limit, then Groq) — slower than this, the
+ * rules answer instead (free tiers can stall for tens of seconds).
  */
-export function createQueryAnalyzer(structuredModel, { mode = RETRIEVAL.analyzerMode, timeoutMs = 4000 } = {}) {
+export function createQueryAnalyzer(structuredModel, { mode = RETRIEVAL.analyzerMode, timeoutMs = 4500 } = {}) {
   const rules = RunnableLambda.from((input) => ({ ...analyzeWithRules(input), analyzer: 'rules' })).withConfig({ runName: 'RuleAnalyzer' });
   if (!structuredModel) return rules.withConfig({ runName: 'QueryAnalysis' });
 

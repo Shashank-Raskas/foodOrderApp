@@ -114,6 +114,17 @@ export const LLM = {
   get answerFallbackModel() {
     return process.env.GROQ_ANSWER_MODEL || 'qwen/qwen3.8-27b';
   },
+  // How long Gemini gets before the same request goes to Groq. Measured on Render: Gemini took
+  // 4+ s for query analysis (1.5–2 s locally) and 3–6.7 s for answers, while Groq answers in
+  // 0.2–1.3 s. Groq stays the fallback, not the primary: its free tier allows far fewer tokens per
+  // minute, and each answer prompt is a few thousand tokens.
+  get primaryTimeoutMs() {
+    return {
+      analysis: Number(process.env.RAG_GEMINI_TIMEOUT_ANALYSIS_MS) || 2500,
+      answer: Number(process.env.RAG_GEMINI_TIMEOUT_ANSWER_MS) || 5000,
+      tools: Number(process.env.RAG_GEMINI_TIMEOUT_TOOLS_MS) || 4000,
+    };
+  },
 };
 
 // /api/chat limits. Small on purpose: they bound cost (free-tier quotas), latency and prompt size.

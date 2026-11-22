@@ -1,6 +1,10 @@
 // Chat models, both on free tiers: Gemini (primary) and Groq (fallback). Callers get LangChain
-// Runnables, so failover is just .withFallbacks() — if Gemini is rate-limited or down, the same
-// request goes to Groq with no change to the calling code.
+// Runnables, so failover is just .withFallbacks() — if Gemini is rate-limited, down or *slow*, the
+// same request goes to Groq with no change to the calling code.
+//
+// "Slow" matters as much as "down": each Gemini call gets its own time limit (LLM.primaryTimeoutMs),
+// after which LangChain aborts it and tries Groq. Without it, one overall timeout covered both, so
+// a slow Gemini used up the whole budget and Groq never got a turn (seen on Render).
 
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatGroq } from '@langchain/groq';
@@ -8,6 +12,11 @@ import { CHAT, LLM } from '../config.js';
 import { requireEnv } from '../env.js';
 
 const common = { temperature: 0, maxRetries: 1 };
+
+/** primary with its own time limit, then the fallback (if configured). */
+function withTimedFallback(primary, fallback, timeoutMs) {
+  return fallback ? primary.withConfig({ timeout: timeoutMs }).withFallbacks([fallback]) : primary;
+}
 
 export function createFastModels() {
   return {
@@ -22,9 +31,10 @@ export function createFastModels() {
 export function createAnswerModel() {
   const answer = { ...common, maxRetries: 0, temperature: 0.2 };
   const primary = new ChatGoogleGenerativeAI({ ...answer, model: LLM.answerModel, maxOutputTokens: CHAT.maxOutputTokens, apiKey: requireEnv('GEMINI_API_KEY') });
-  if (!process.env.GROQ_API_KEY) return primary;
-  const fallback = new ChatGroq({ ...answer, maxRetries: 1, model: LLM.answerFallbackModel, maxTokens: CHAT.maxOutputTokens, apiKey: process.env.GROQ_API_KEY });
-  return primary.withFallbacks([fallback]);
+  const fallback = process.env.GROQ_API_KEY
+    ? new ChatGroq({ ...answer, maxRetries: 1, model: LLM.answerFallbackModel, maxTokens: CHAT.maxOutputTokens, apiKey: process.env.GROQ_API_KEY })
+    : null;
+  return withTimedFallback(primary, fallback, LLM.primaryTimeoutMs.answer);
 }
 
 /**
@@ -40,14 +50,16 @@ export function createToolModel() {
     : null;
   return {
     bindTools(tools) {
-      const main = primary.bindTools(tools);
-      return fallback ? main.withFallbacks([fallback.bindTools(tools)]) : main;
+      return withTimedFallback(primary.bindTools(tools), fallback?.bindTools(tools), LLM.primaryTimeoutMs.tools);
     },
   };
 }
 
 /** primary.withStructuredOutput(schema), failing over to the fallback model with the same schema. */
 export function structuredWithFallback({ primary, fallback }, schema, name) {
-  const main = primary.withStructuredOutput(schema, { name });
-  return fallback ? main.withFallbacks([fallback.withStructuredOutput(schema, { name })]) : main;
+  return withTimedFallback(
+    primary.withStructuredOutput(schema, { name }),
+    fallback?.withStructuredOutput(schema, { name }),
+    LLM.primaryTimeoutMs.analysis,
+  );
 }
