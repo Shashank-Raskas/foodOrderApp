@@ -46,14 +46,14 @@ export default [
   },
   {
     // Babel config is CommonJS (used only by Jest)
-    files: ['babel.config.cjs'],
+    files: ['babel.config.cjs', 'src/test/*.cjs'],
     languageOptions: { sourceType: 'commonjs', globals: globals.node },
     rules: js.configs.recommended.rules,
   },
 
   // Node backend, e2e tests + config files
   {
-    files: ['backend/**/*.js', 'e2e/**/*.js', '*.config.js'],
+    files: ['backend/**/*.js', 'e2e/**/*.js', '*.config.js', 'content/**/*.js'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',

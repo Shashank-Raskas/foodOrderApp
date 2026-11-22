@@ -3,8 +3,10 @@ export default {
   testEnvironment: 'jsdom',
   roots: ['<rootDir>/src'],
   testMatch: ['**/*.test.{js,jsx}'],
-  transform: { '\\.[jt]sx?$': 'babel-jest' },
+  transform: { '\\.[jt]sx?$': 'babel-jest', '\\.md$': '<rootDir>/src/test/rawTransform.cjs' },
   moduleNameMapper: {
+    // Vite's `file.md?raw` → the file itself, which the transform above turns into a string
+    '^(.+\\.md)\\?raw$': '$1',
     '\\.css$': '<rootDir>/src/test/styleStub.js',
     '\\.(jpe?g|png|gif|svg|webp)$': '<rootDir>/src/test/fileStub.js',
   },
