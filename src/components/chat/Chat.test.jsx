@@ -99,7 +99,7 @@ describe('ChatWidget', () => {
 
     expect(await within(panel).findByText('Mac & Cheese', { selector: 'strong' })).toBeInTheDocument();
     expect(within(panel).getByText('Do you have biryani?')).toBeInTheDocument();
-    expect(callsTo(api, 'POST', '/api/chat')[0].body).toEqual({ message: 'Do you have biryani?', history: [] });
+    expect(callsTo(api, 'POST', '/api/chat')[0].body).toEqual({ message: 'Do you have biryani?', history: [], sessionId: expect.stringMatching(/^[A-Za-z0-9-]{8,64}$/) });
     expect(callsTo(api, 'POST', '/api/chat')[0].headers.Authorization).toBeUndefined();
 
     // [1] → the meal page, [2] → the FAQ page
@@ -139,13 +139,31 @@ describe('ChatWidget', () => {
     await within(panel).findByRole('link', { name: '1' });
     await user.type(input, 'is it spicy?{Enter}');
     await waitFor(() => expect(callsTo(api, 'POST', '/api/chat')).toHaveLength(2));
-    expect(callsTo(api, 'POST', '/api/chat')[1].body).toEqual({
+    const [first, second] = callsTo(api, 'POST', '/api/chat');
+    expect(second.body).toEqual({
       message: 'is it spicy?',
       history: [
         { role: 'user', content: 'Do you have biryani?' },
         { role: 'assistant', content: BIRYANI[3][1].answer },
       ],
+      sessionId: first.body.sessionId, // same conversation → same session
     });
+  });
+
+  it('"Start a new chat" begins a new session', async () => {
+    const api = mockApi(() => sseResponse(BIRYANI));
+    const user = userEvent.setup();
+    renderWithProviders(<ChatWidget />);
+    const panel = await openChat(user);
+    const input = within(panel).getByLabelText('Your message');
+    await user.type(input, 'one{Enter}');
+    await within(panel).findByRole('link', { name: '1' });
+    await user.click(within(panel).getByRole('button', { name: 'Start a new chat' }));
+    await user.type(input, 'two{Enter}');
+    await waitFor(() => expect(callsTo(api, 'POST', '/api/chat')).toHaveLength(2));
+    const [a, b] = callsTo(api, 'POST', '/api/chat');
+    expect(b.body.history).toEqual([]);
+    expect(b.body.sessionId).not.toBe(a.body.sessionId);
   });
 
   it('shows the server message when a request is refused (e.g. rate limited)', async () => {
@@ -195,6 +213,31 @@ describe('ChatWidget', () => {
     expect(within(panel).getByText('Do you have biryani?')).toBeInTheDocument();
     await user.click(within(panel).getByRole('button', { name: 'Start a new chat' }));
     expect(within(panel).queryByText('Do you have biryani?')).not.toBeInTheDocument();
+  });
+});
+
+describe('feedback', () => {
+  it('shows 👍/👎 on traced answers and sends the choice once', async () => {
+    const traced = BIRYANI.map(([e, d]) => (e === 'done' ? [e, { ...d, traceId: 'f'.repeat(32) }] : [e, d]));
+    const api = mockApi((body) => sseResponse(traced));
+    const user = userEvent.setup();
+    renderWithProviders(<ChatWidget />);
+    const panel = await openChat(user);
+    await user.type(within(panel).getByLabelText('Your message'), 'biryani?{Enter}');
+    await user.click(await within(panel).findByRole('button', { name: 'No, this answer was not helpful' }));
+    expect(within(panel).getByText('Thanks for the feedback!')).toBeInTheDocument();
+    expect(within(panel).queryByRole('button', { name: /this answer was/ })).not.toBeInTheDocument();
+    expect(callsTo(api, 'POST', '/api/chat/feedback').map((c) => c.body)).toEqual([{ traceId: 'f'.repeat(32), helpful: false }]);
+  });
+
+  it('is not offered when the server sent no trace id', async () => {
+    mockApi(() => sseResponse(BIRYANI));
+    const user = userEvent.setup();
+    renderWithProviders(<ChatWidget />);
+    const panel = await openChat(user);
+    await user.type(within(panel).getByLabelText('Your message'), 'biryani?{Enter}');
+    await within(panel).findByRole('link', { name: '1' });
+    expect(within(panel).queryByRole('group', { name: 'Was this answer helpful?' })).not.toBeInTheDocument();
   });
 });
 

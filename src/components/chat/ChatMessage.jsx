@@ -109,7 +109,22 @@ function MealCard({ meal, onNavigate }) {
   );
 }
 
-export default function ChatMessage({ message, menu, onNavigate }) {
+function Feedback({ message, onFeedback }) {
+  if (message.feedback) return <p className="chat-note chat-feedback-thanks">Thanks for the feedback!</p>;
+  return (
+    <div className="chat-feedback" role="group" aria-label="Was this answer helpful?">
+      <span>Helpful?</span>
+      <button type="button" onClick={() => onFeedback(message, true)} aria-label="Yes, this answer was helpful">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11v9H4v-9h3zm3 9h7.2a2 2 0 0 0 2-1.6l1.2-6A2 2 0 0 0 18.4 10H14l.7-3.5A1.7 1.7 0 0 0 11.6 5L8 11v9h2z" /></svg>
+      </button>
+      <button type="button" onClick={() => onFeedback(message, false)} aria-label="No, this answer was not helpful">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 13V4h3v9h-3zm-3-9H6.8a2 2 0 0 0-2 1.6l-1.2 6A2 2 0 0 0 5.6 14H10l-.7 3.5a1.7 1.7 0 0 0 3.1 1.5L16 13V4h-2z" /></svg>
+      </button>
+    </div>
+  );
+}
+
+export default function ChatMessage({ message, menu, onNavigate, onFeedback }) {
   const userProgressCtx = useContext(UserProgressContext);
 
   if (message.role === 'user') {
@@ -150,6 +165,8 @@ export default function ChatMessage({ message, menu, onNavigate }) {
           ))}
         </div>
       )}
+
+      {message.status === 'done' && message.traceId && onFeedback && <Feedback message={message} onFeedback={onFeedback} />}
     </div>
   );
 }

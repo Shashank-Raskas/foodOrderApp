@@ -75,6 +75,7 @@ export const API_ENDPOINTS = {
   COUPON_VALIDATE: `${API_URL}/api/coupons/validate`,
   MEAL_REVIEWS: (mealId) => `${API_URL}/api/meals/${mealId}/reviews`,
   CHAT: `${API_URL}/api/chat`,
+  CHAT_FEEDBACK: `${API_URL}/api/chat/feedback`,
 };
 
 // Export for debugging

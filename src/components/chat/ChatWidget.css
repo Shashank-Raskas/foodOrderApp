@@ -174,6 +174,16 @@
 }
 .chat-source:hover { border-color: var(--brand); color: var(--brand); }
 
+.chat-feedback { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 0.76rem; }
+.chat-feedback span { margin-right: 2px; }
+.chat-feedback button {
+  width: 28px; height: 28px; display: grid; place-items: center;
+  border: none; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer;
+}
+.chat-feedback button:hover { background: var(--surface-3); color: var(--ink); }
+.chat-feedback svg { width: 15px; height: 15px; fill: currentColor; }
+.chat-feedback-thanks { font-size: 0.76rem; }
+
 .chat-input { display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--border); }
 .chat-input textarea {
   flex: 1; resize: none; max-height: 110px; padding: 10px 12px;

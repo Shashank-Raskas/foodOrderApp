@@ -1,15 +1,22 @@
 // POST /api/chat — the support chatbot, streamed with Server-Sent Events (SSE).
 //
-// Request:  { "message": "Do you have biryani?", "history": [{ "role": "user"|"assistant", "content": "…" }] }
+// Request:  { "message": "Do you have biryani?", "history": [{ "role": "user"|"assistant", "content": "…" }],
+//             "sessionId": "<random id for this browser tab's conversation, optional>" }
 // Response: text/event-stream of `meta`, `token` (many), then `done` — or `error`.
 // SSE over a normal POST: the browser reads it with fetch() + a stream reader, and the answer
 // appears word by word instead of after the whole LLM call.
 
+import crypto from 'node:crypto';
 import { optionalAuthenticate } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { createRouter, isNonEmptyString } from '../lib/router.js';
 import { getChatService, isChatConfigured } from '../rag/chat/index.js';
 import { CHAT } from '../rag/config.js';
+import { withChatTrace, scoreTrace, TRACE_ID } from '../rag/observability/langfuse.js';
+
+// Traces group a customer's chats under a stable, non-reversible id — never their email or name
+const anonymousId = (userId) => (userId ? `u_${crypto.createHash('sha256').update(`chat:${userId}`).digest('hex').slice(0, 16)}` : undefined);
+const SESSION_ID = /^[A-Za-z0-9-]{8,64}$/;
 
 const router = createRouter();
 
@@ -22,6 +29,7 @@ function validate(body) {
   if (!isNonEmptyString(message)) return 'Please type a message.';
   if (message.length > CHAT.maxMessageChars) return `Messages can be at most ${CHAT.maxMessageChars} characters.`;
   if (!Array.isArray(history) || history.length > 20) return 'Invalid chat history.';
+  if (body.sessionId !== undefined && (typeof body.sessionId !== 'string' || !SESSION_ID.test(body.sessionId))) return 'Invalid session.';
   const ok = history.every((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.length <= 4000);
   return ok ? null : 'Invalid chat history.';
 }
@@ -53,11 +61,24 @@ router.post('/api/chat', burstLimiter, dailyLimiter, optionalAuthenticate, async
   const signal = AbortSignal.any([disconnected.signal, AbortSignal.timeout(CHAT.answerTimeoutMs)]);
 
   try {
-    const { message, history = [] } = req.body;
-    for await (const event of getChatService().chat({ message: message.trim(), history, user: req.user ?? null, signal })) {
-      if (disconnected.signal.aborted) break;
-      send(event);
-    }
+    const { message, history = [], sessionId } = req.body;
+    const trace = {
+      userId: anonymousId(req.user?.userId),
+      sessionId: typeof sessionId === 'string' && SESSION_ID.test(sessionId) ? sessionId : undefined,
+      input: message.trim(),
+      tags: [req.user ? 'signed-in' : 'guest'],
+    };
+    await withChatTrace(trace, async ({ callbacks, setOutput, traceId }) => {
+      for await (const event of getChatService().chat({ message: message.trim(), history, user: req.user ?? null, signal, callbacks })) {
+        if (disconnected.signal.aborted) break;
+        if (event.type === 'done') {
+          setOutput({ answer: event.answer, route: event.route, citations: event.citations?.map((c) => c.id), mealIds: event.mealIds });
+          // The id lets the customer's 👍/👎 be attached to this exact answer in Langfuse
+          if (traceId) event.traceId = traceId;
+        }
+        send(event);
+      }
+    });
   } catch (err) {
     if (!disconnected.signal.aborted) {
       console.error('[Chat] Failed:', err.message);
@@ -69,6 +90,30 @@ router.post('/api/chat', burstLimiter, dailyLimiter, optionalAuthenticate, async
     }
   } finally {
     res.end();
+  }
+});
+
+// POST /api/chat/feedback — { traceId, helpful: true|false, comment? } from the 👍/👎 under an answer.
+// Stored as a "user-feedback" score (1 / 0) on that answer's Langfuse trace, next to its prompts and
+// retrieved sources, so a 👎 can be investigated in context. Trace ids are random 128-bit values
+// only ever sent to the person who asked, so they can't be guessed to score other answers.
+const feedbackLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, message: 'Too many feedback requests. Please wait a moment.' });
+
+router.post('/api/chat/feedback', feedbackLimiter, async (req, res) => {
+  const { traceId, helpful, comment } = req.body || {};
+  if (typeof traceId !== 'string' || !TRACE_ID.test(traceId) || typeof helpful !== 'boolean') {
+    return res.status(400).json({ message: 'Invalid feedback.' });
+  }
+  if (comment !== undefined && (typeof comment !== 'string' || comment.length > 500)) {
+    return res.status(400).json({ message: 'Comments can be at most 500 characters.' });
+  }
+  try {
+    const recorded = await scoreTrace({ traceId, name: 'user-feedback', value: helpful ? 1 : 0, comment: comment?.trim() || undefined });
+    res.status(202).json({ recorded });
+  } catch (err) {
+    // Feedback is best-effort: never show the customer an error for it
+    console.warn('[Chat] Feedback not recorded:', err.message);
+    res.status(202).json({ recorded: false });
   }
 });
 

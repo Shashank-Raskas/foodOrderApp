@@ -45,7 +45,7 @@ test('a guest gets a streamed answer with sources and a dish card; adding it ask
   await expect(chat.locator('strong', { hasText: 'Hyderabadi Chicken Biryani' })).toBeVisible();
   await expect(chat.getByRole('link', { name: '1', exact: true })).toHaveAttribute('href', '/meal/m22');
   await expect(chat.getByRole('link', { name: 'Do you charge for delivery? — Delivery' })).toBeVisible();
-  expect(requests[0]).toEqual({ body: { message: 'Something spicy and veg under ₹300?', history: [] }, auth: undefined });
+  expect(requests[0]).toEqual({ body: { message: 'Something spicy and veg under ₹300?', history: [], sessionId: expect.any(String) }, auth: undefined });
 
   // The card uses the real menu from the backend
   const card = chat.getByRole('list', { name: 'Suggested dishes' }).getByRole('listitem');

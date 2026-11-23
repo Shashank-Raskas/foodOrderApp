@@ -5,6 +5,26 @@ import { readSse } from './sse';
 
 // The conversation survives page navigation and reloads within this tab, but not across tabs/devices
 const STORAGE_KEY = 'chat:v1';
+// A random id per conversation, so its messages are grouped as one session in the server's traces
+const SESSION_KEY = 'chat:session';
+
+function newSessionId() {
+  const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+  try {
+    sessionStorage.setItem(SESSION_KEY, id);
+  } catch {
+    /* storage unavailable: a fresh id per page load is fine */
+  }
+  return id;
+}
+
+function loadSessionId() {
+  try {
+    return sessionStorage.getItem(SESSION_KEY) || newSessionId();
+  } catch {
+    return newSessionId();
+  }
+}
 const HISTORY_SENT = 6; // the server keeps the last 6 anyway
 export const MAX_MESSAGE_CHARS = 500;
 
@@ -30,6 +50,8 @@ export default function useChat() {
   const [messages, setMessages] = useState(loadMessages);
   const [isStreaming, setIsStreaming] = useState(false);
   const controllerRef = useRef(null);
+  const sessionRef = useRef(null);
+  sessionRef.current ??= loadSessionId();
 
   useEffect(() => {
     try {
@@ -70,7 +92,7 @@ export default function useChat() {
         const res = await authFetch(API_ENDPOINTS.CHAT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text, history }),
+          body: JSON.stringify({ message: text, history, sessionId: sessionRef.current }),
           signal: controller.signal,
         });
         if (!res.ok || !res.body) {
@@ -96,6 +118,7 @@ export default function useChat() {
               citations: data.citations || [],
               mealIds: data.mealIds || [],
               signInRequired: Boolean(data.signInRequired),
+              traceId: data.traceId, // present when the server records traces; enables 👍/👎
             });
           } else if (event === 'error') {
             finished = true;
@@ -116,10 +139,22 @@ export default function useChat() {
 
   const stop = useCallback(() => controllerRef.current?.abort(), []);
 
+  /** 👍 / 👎 on an answer. Best-effort: the button shows "thanks" even if the request fails. */
+  const sendFeedback = useCallback((message, helpful) => {
+    if (message.feedback || !message.traceId) return;
+    setMessages((all) => all.map((m) => (m.id === message.id ? { ...m, feedback: helpful ? 'up' : 'down' } : m)));
+    fetch(API_ENDPOINTS.CHAT_FEEDBACK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ traceId: message.traceId, helpful }),
+    }).catch(() => {});
+  }, []);
+
   const clear = useCallback(() => {
     controllerRef.current?.abort();
     setMessages([]);
+    sessionRef.current = newSessionId(); // a new chat is a new session
   }, []);
 
-  return { messages, isStreaming, send, stop, clear };
+  return { messages, isStreaming, send, stop, clear, sendFeedback };
 }

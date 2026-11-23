@@ -10,7 +10,7 @@ const menuRequest = {};
 const SUGGESTIONS = ['Something spicy and veg under ₹300?', 'How long do refunds take?', 'Where is my order?', 'Do you deliver to Gachibowli?'];
 
 export default function ChatPanel({ onClose }) {
-  const { messages, isStreaming, send, stop, clear } = useChat();
+  const { messages, isStreaming, send, stop, clear, sendFeedback } = useChat();
   const { data: menu } = useHttp(API_ENDPOINTS.MEALS, menuRequest, []);
   const [draft, setDraft] = useState('');
   const inputRef = useRef(null);
@@ -75,7 +75,7 @@ export default function ChatPanel({ onClose }) {
             </ul>
           </div>
         ) : (
-          messages.map((m) => <ChatMessage key={m.id} message={m} menu={menu || []} onNavigate={onNavigate} />)
+          messages.map((m) => <ChatMessage key={m.id} message={m} menu={menu || []} onNavigate={onNavigate} onFeedback={sendFeedback} />)
         )}
       </div>
 

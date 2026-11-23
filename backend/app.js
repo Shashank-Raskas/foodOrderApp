@@ -6,6 +6,15 @@ import dns from 'node:dns';
 dns.setDefaultResultOrder('ipv4first');
 import { createApp } from './createApp.js';
 import { warmUp } from './rag/chat/index.js';
+import { startTracing, shutdownTracing } from './rag/observability/langfuse.js';
+
+// Langfuse tracing for the chatbot (only when its keys are set)
+if (startTracing()) console.log('[Chat] Langfuse tracing on');
+
+// Render stops the old instance with SIGTERM on every deploy: send buffered traces before exiting
+process.once('SIGTERM', () => {
+  shutdownTracing().finally(() => process.exit(0));
+});
 
 // The Express app (middleware + routes) is built in createApp.js so tests can use it without listening
 const app = createApp();
