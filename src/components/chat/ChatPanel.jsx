@@ -3,6 +3,7 @@ import useHttp from '../../hooks/useHttp';
 import { API_ENDPOINTS } from '../../config/api';
 import useChat, { MAX_MESSAGE_CHARS } from './useChat';
 import ChatMessage from './ChatMessage';
+import BotIcon from './BotIcon';
 
 // Same request as the menu page, so the cached menu is reused for the meal cards
 const menuRequest = {};
@@ -46,9 +47,12 @@ export default function ChatPanel({ onClose }) {
   return (
     <section className="chat-panel" role="dialog" aria-label="Chat with the Flavor Alchemist assistant">
       <header className="chat-header">
-        <div>
-          <h2>Ask the Flavor Alchemist</h2>
-          <p>Menu, delivery, refunds and your orders</p>
+        <div className="chat-header-title">
+          <span className="chat-panel-avatar"><BotIcon /></span>
+          <div>
+            <h2>Ask the Flavor Alchemist</h2>
+            <p className="chat-status">Online · replies in seconds</p>
+          </div>
         </div>
         <div className="chat-header-actions">
           {messages.length > 0 && (

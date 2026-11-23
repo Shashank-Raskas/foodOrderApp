@@ -1,6 +1,6 @@
 // The chat widget: SSE parsing, streaming answers, citations, meal cards, sign-in, errors, safety.
 import { useContext } from 'react';
-import { render, screen, within, waitFor } from '@testing-library/react';
+import { render, screen, within, waitFor, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import ChatWidget from './ChatWidget';
@@ -213,6 +213,49 @@ describe('ChatWidget', () => {
     expect(within(panel).getByText('Do you have biryani?')).toBeInTheDocument();
     await user.click(within(panel).getByRole('button', { name: 'Start a new chat' }));
     expect(within(panel).queryByText('Do you have biryani?')).not.toBeInTheDocument();
+  });
+});
+
+describe('greeting bubble', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+  const wait = (ms) => act(() => jest.advanceTimersByTime(ms));
+
+  it('greets first-time visitors on the home page once, then never again after dismissal', async () => {
+    mockApi(() => sseResponse(BIRYANI));
+    const { unmount } = renderWithProviders(<ChatWidget />, { route: '/' });
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    wait(3000);
+    expect(screen.getByRole('status')).toHaveTextContent("Hi! I'm your food assistant.");
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    unmount();
+    renderWithProviders(<ChatWidget />, { route: '/' });
+    wait(15000);
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('is never shown on other pages, and hides itself after a few seconds', () => {
+    mockApi(() => sseResponse(BIRYANI));
+    const { unmount } = renderWithProviders(<ChatWidget />, { route: '/menu' });
+    wait(5000);
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    unmount();
+    renderWithProviders(<ChatWidget />, { route: '/' });
+    wait(3000);
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    wait(10000);
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('clicking it opens the chat', async () => {
+    mockApi(() => sseResponse(BIRYANI));
+    renderWithProviders(<ChatWidget />, { route: '/' });
+    wait(3000);
+    fireEvent.click(screen.getByText("👋 Hi! I'm your food assistant."));
+    jest.useRealTimers();
+    expect(await screen.findByRole('dialog', { name: /chat with the flavor alchemist/i })).toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 });
 
