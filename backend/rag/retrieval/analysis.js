@@ -29,6 +29,16 @@ export const AnalysisSchema = z.object({
   category: z.enum(CATEGORIES).optional().describe('Menu category, only if clearly asked for'),
 });
 
+// The same schema for the Groq fallback, but allowing null: open models (gpt-oss, and qwen under
+// real traffic) fill unused optional fields with null, which the strict schema rejected — so a
+// Gemini 503 sent analysis straight to the rules (seen in production traces). Gemini itself can't
+// take nullable schemas, so it keeps AnalysisSchema; normalizeAnalysis turns nulls into "absent".
+export const AnalysisSchemaNullable = z.object(
+  Object.fromEntries(
+    Object.entries(AnalysisSchema.shape).map(([key, field]) => [key, field instanceof z.ZodOptional ? field.unwrap().nullable().optional() : field]),
+  ),
+);
+
 const SYSTEM = `You analyse questions sent to the support assistant of The Flavor Alchemist, a food delivery restaurant in Hyderabad.
 Return:
 - standaloneQuestion: if the latest message depends on the chat history ("it", "that one", "the cheaper one"), rewrite it so it is understandable on its own. If it is already understandable, return it unchanged. Never add the restaurant's name or any words the user did not imply, and do not answer it.
@@ -132,7 +142,9 @@ export function analyzeWithRules({ question, history = [] }) {
 // ---------- normalisation shared by both analyzers ----------
 
 export function normalizeAnalysis(raw, question, history = []) {
-  const a = AnalysisSchema.safeParse(raw);
+  // null (from the Groq fallback) means "not set"
+  const cleaned = raw && typeof raw === 'object' ? Object.fromEntries(Object.entries(raw).filter(([, v]) => v !== null)) : raw;
+  const a = AnalysisSchema.safeParse(cleaned);
   if (!a.success) return analyzeWithRules({ question, history });
   const out = { ...a.data };
   if (!out.standaloneQuestion?.trim()) out.standaloneQuestion = question;

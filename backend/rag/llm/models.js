@@ -66,11 +66,14 @@ export function createJudgeModel() {
   return new ChatGoogleGenerativeAI({ ...common, maxRetries: 3, model: LLM.answerModel, apiKey: requireEnv('GEMINI_API_KEY') });
 }
 
-/** primary.withStructuredOutput(schema), failing over to the fallback model with the same schema. */
-export function structuredWithFallback({ primary, fallback }, schema, name) {
+/**
+ * primary.withStructuredOutput(schema), failing over to the fallback model. The fallback may use a
+ * more lenient schema (e.g. one that accepts null), since open models fill unused fields with null.
+ */
+export function structuredWithFallback({ primary, fallback }, schema, name, fallbackSchema = schema) {
   return withTimedFallback(
     primary.withStructuredOutput(schema, { name }),
-    fallback?.withStructuredOutput(schema, { name }),
+    fallback?.withStructuredOutput(fallbackSchema, { name }),
     LLM.primaryTimeoutMs.analysis,
   );
 }

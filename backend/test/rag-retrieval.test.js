@@ -4,7 +4,7 @@ import { describe, it, expect, jest } from '@jest/globals';
 import { Document } from '@langchain/core/documents';
 import { Embeddings } from '@langchain/core/embeddings';
 import { RunnableLambda } from '@langchain/core/runnables';
-import { analyzeWithRules, normalizeAnalysis, createQueryAnalyzer, AnalysisSchema, analysisPrompt } from '../rag/retrieval/analysis.js';
+import { analyzeWithRules, normalizeAnalysis, createQueryAnalyzer, AnalysisSchema, AnalysisSchemaNullable, analysisPrompt } from '../rag/retrieval/analysis.js';
 import { CrossEncoderReranker } from '../rag/retrieval/reranker.js';
 import { mmrSelect } from '../rag/retrieval/mmr.js';
 import { createRetrievalPipeline, ROUTE_BY_INTENT } from '../rag/retrieval/pipeline.js';
@@ -70,6 +70,13 @@ describe('normalizeAnalysis', () => {
   it('drops impossible values and filters on non-menu intents', () => {
     expect(normalizeAnalysis({ standaloneQuestion: 'q', intent: 'menu', maxPrice: 0, minPrice: -5, spiceLevels: [] }, 'q')).toEqual({ standaloneQuestion: 'q', intent: 'menu' });
     expect(normalizeAnalysis({ standaloneQuestion: 'q', intent: 'policy', isVeg: true, category: 'soups' }, 'q')).toEqual({ standaloneQuestion: 'q', intent: 'policy' });
+  });
+
+  it('treats null fields (as open models send them) as not set', () => {
+    const raw = { standaloneQuestion: 'Do you have biryani?', intent: 'menu', isVeg: null, maxPrice: null, minPrice: null, spiceLevels: null, category: null };
+    expect(normalizeAnalysis(raw, 'Do you have biryani?')).toEqual({ standaloneQuestion: 'Do you have biryani?', intent: 'menu' });
+    expect(AnalysisSchemaNullable.safeParse(raw).success).toBe(true);
+    expect(AnalysisSchema.safeParse(raw).success).toBe(false); // why the fallback needs its own schema
   });
 
   it('falls back to the rules when the LLM output does not match the schema', () => {

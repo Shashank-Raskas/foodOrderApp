@@ -6,7 +6,7 @@ import { BgeEmbeddings } from '../embeddings/bgeEmbeddings.js';
 import { createQdrantClient } from '../store/client.js';
 import { liveStore } from '../store/indexer.js';
 import { CrossEncoderReranker } from '../retrieval/reranker.js';
-import { AnalysisSchema, createQueryAnalyzer } from '../retrieval/analysis.js';
+import { AnalysisSchema, AnalysisSchemaNullable, createQueryAnalyzer } from '../retrieval/analysis.js';
 import { createRetrievalPipeline } from '../retrieval/pipeline.js';
 import { loadParents } from '../retrieval/parents.js';
 import { createAnswerModel, createFastModels, createToolModel, structuredWithFallback } from '../llm/models.js';
@@ -26,7 +26,7 @@ function build(serviceOptions = {}) {
   const embeddings = new BgeEmbeddings();
   const reranker = new CrossEncoderReranker();
   const store = liveStore({ client: createQdrantClient(), embeddings });
-  const analyzer = createQueryAnalyzer(structuredWithFallback(createFastModels(), AnalysisSchema, 'query_analysis'));
+  const analyzer = createQueryAnalyzer(structuredWithFallback(createFastModels(), AnalysisSchema, 'query_analysis', AnalysisSchemaNullable));
   const retrieval = createRetrievalPipeline({ store, analyzer, reranker, parents: loadParents });
   const toolModel = createToolModel();
   // A fresh graph per request, with tools bound to that request's signed-in user (cheap: no I/O)

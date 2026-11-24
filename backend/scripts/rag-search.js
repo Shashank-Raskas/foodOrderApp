@@ -43,11 +43,11 @@ await store.embeddings.embedQuery('warm up'); // model load, so the timings belo
 
 if (mode === 'pipeline') {
   const { CrossEncoderReranker } = await import('../rag/retrieval/reranker.js');
-  const { createQueryAnalyzer, AnalysisSchema } = await import('../rag/retrieval/analysis.js');
+  const { createQueryAnalyzer, AnalysisSchema, AnalysisSchemaNullable } = await import('../rag/retrieval/analysis.js');
   const { createRetrievalPipeline } = await import('../rag/retrieval/pipeline.js');
   const { loadParents } = await import('../rag/retrieval/parents.js');
   const { createFastModels, structuredWithFallback } = await import('../rag/llm/models.js');
-  const analyzer = createQueryAnalyzer(structuredWithFallback(createFastModels(), AnalysisSchema, 'query_analysis'));
+  const analyzer = createQueryAnalyzer(structuredWithFallback(createFastModels(), AnalysisSchema, 'query_analysis', AnalysisSchemaNullable));
   const pipeline = createRetrievalPipeline({ store, analyzer, reranker: new CrossEncoderReranker(), parents: loadParents });
   const t = Date.now();
   const out = await pipeline.invoke({ question: query, history: [] });

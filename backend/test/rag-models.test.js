@@ -40,6 +40,23 @@ describe('structuredWithFallback', () => {
     expect(await structuredWithFallback({ primary: fakeModel('gemini', 60), fallback: null }, null, 'x').invoke('q')).toEqual({ from: 'gemini' });
   });
 
+  it('the fallback can use its own (lenient) schema', async () => {
+    const seen = {};
+    const model = (name) => ({
+      withStructuredOutput: (schema) => {
+        seen[name] = schema;
+        return RunnableLambda.from(async () => {
+          if (name === 'gemini') throw new Error('503 high demand');
+          return { from: name };
+        });
+      },
+    });
+    const strict = { id: 'strict' };
+    const lenient = { id: 'lenient' };
+    expect(await structuredWithFallback({ primary: model('gemini'), fallback: model('groq') }, strict, 'x', lenient).invoke('q')).toEqual({ from: 'groq' });
+    expect(seen).toEqual({ gemini: strict, groq: lenient });
+  });
+
   it('defaults: Gemini gets 2.5 s for analysis, 5 s for answers, 4 s for tools', () => {
     expect(LLM.primaryTimeoutMs).toEqual({ analysis: 2500, answer: 5000, tools: 4000 });
   });

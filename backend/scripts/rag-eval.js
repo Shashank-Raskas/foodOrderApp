@@ -14,7 +14,7 @@ import { BgeEmbeddings } from '../rag/embeddings/bgeEmbeddings.js';
 import { createQdrantClient } from '../rag/store/client.js';
 import { liveStore } from '../rag/store/indexer.js';
 import { CrossEncoderReranker } from '../rag/retrieval/reranker.js';
-import { createQueryAnalyzer, AnalysisSchema } from '../rag/retrieval/analysis.js';
+import { createQueryAnalyzer, AnalysisSchema, AnalysisSchemaNullable } from '../rag/retrieval/analysis.js';
 import { loadParents } from '../rag/retrieval/parents.js';
 import { createFastModels, structuredWithFallback } from '../rag/llm/models.js';
 import { runRetrievalEval, formatReport } from '../rag/eval/runRetrievalEval.js';
@@ -33,7 +33,7 @@ const report = await runRetrievalEval({
   store: liveStore({ client: createQdrantClient(), embeddings }),
   embeddings,
   reranker,
-  analyzer: createQueryAnalyzer(useLlm ? structuredWithFallback(createFastModels(), AnalysisSchema, 'query_analysis') : null, { mode: 'llm' }),
+  analyzer: createQueryAnalyzer(useLlm ? structuredWithFallback(createFastModels(), AnalysisSchema, 'query_analysis', AnalysisSchemaNullable) : null, { mode: 'llm' }),
   parents: loadParents,
   configNames: ['Dense only', 'BM25 only', 'Hybrid (RRF)', '+ routing & filters', '+ rerank (default)', '+ MMR λ=0.9', '+ MMR λ=0.7', 'rerank top 20', 'rerank top 5'],
   delayMs: useLlm ? 4500 : 0, // stay under the free tier's requests per minute
