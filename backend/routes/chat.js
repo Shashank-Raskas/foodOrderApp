@@ -10,7 +10,7 @@ import crypto from 'node:crypto';
 import { optionalAuthenticate } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { createRouter, isNonEmptyString } from '../lib/router.js';
-import { getChatService, isChatConfigured } from '../rag/chat/index.js';
+import { getChatService, isChatConfigured, chatHealth } from '../rag/chat/index.js';
 import { CHAT } from '../rag/config.js';
 import { withChatTrace, scoreTrace, TRACE_ID } from '../rag/observability/langfuse.js';
 
@@ -91,6 +91,15 @@ router.post('/api/chat', burstLimiter, dailyLimiter, optionalAuthenticate, async
   } finally {
     res.end();
   }
+});
+
+// GET /api/chat/health — is the chatbot configured, are its models loaded, can it reach the vector
+// index (and how many chunks it holds), cache and live re-index status. 503 when it can't answer.
+const healthLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: 'Too many requests.' });
+router.get('/api/chat/health', healthLimiter, async (req, res) => {
+  const health = await chatHealth();
+  const ok = health.configured && health.index?.ok;
+  res.status(ok ? 200 : 503).json({ status: ok ? 'ok' : 'unavailable', ...health });
 });
 
 // POST /api/chat/feedback — { traceId, helpful: true|false, comment? } from the 👍/👎 under an answer.

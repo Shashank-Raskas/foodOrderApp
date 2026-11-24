@@ -4,6 +4,7 @@ import { rateLimit } from '../middleware/rateLimit.js';
 import { createRouter, isNonEmptyString } from '../lib/router.js';
 import { getMeals } from '../services/mealsService.js';
 import { couponQuery, evaluateCoupon } from '../services/couponService.js';
+import { notifyKnowledgeChange } from '../lib/knowledgeEvents.js';
 
 const router = createRouter();
 
@@ -64,6 +65,7 @@ router.post('/api/meals/:id/reviews', authenticate, async (req, res) => {
       // Update existing review
       const doc = existing.docs[0];
       await doc.ref.update({ rating: numericRating, comment: cleanComment, updatedAt: new Date().toISOString() });
+      notifyKnowledgeChange('reviews'); // the chatbot re-indexes this meal's review summary
       return res.json({ message: 'Review updated!', review: { id: doc.id, ...doc.data(), rating: numericRating, comment: cleanComment } });
     }
 
@@ -81,6 +83,7 @@ router.post('/api/meals/:id/reviews', authenticate, async (req, res) => {
     };
 
     const ref = await db.collection('reviews').add(reviewData);
+    notifyKnowledgeChange('reviews'); // the chatbot re-indexes this meal's review summary
     res.status(201).json({ message: 'Review submitted!', review: { id: ref.id, ...reviewData } });
   } catch (err) {
     console.error('[Reviews] Submit error:', err);

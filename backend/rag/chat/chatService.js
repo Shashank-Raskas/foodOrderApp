@@ -29,8 +29,9 @@ const accountCitations = (toolsUsed) =>
  * retrieval:   the phase 3 pipeline (Runnable)
  * answerChain: the phase 4 grounded answer chain (Runnable)
  * agentFor:    (userId) → the account agent graph with tools bound to that user (phase 5)
+ * cache, embedQuery: the semantic cache and the function that embeds a question (phase 8)
  */
-export function createChatService({ retrieval, answerChain, agentFor = null, includeContext = false }) {
+export function createChatService({ retrieval, answerChain, agentFor = null, includeContext = false, cache = null, embedQuery = null }) {
   // Evaluation only: attach the exact sources the answer was generated from, so a judge can check
   // faithfulness. Never enabled for the API (the route uses the default), so clients don't get it.
   const contextOf = (documents) => (includeContext ? { context: documents.map((d, i) => ({ n: i + 1, id: d.metadata.id, text: d.metadata.context ?? d.pageContent })) } : {});
@@ -42,11 +43,33 @@ export function createChatService({ retrieval, answerChain, agentFor = null, inc
   return {
     async *chat({ message, history = [], user = null, signal, callbacks }) {
       const config = { signal, callbacks };
+
+      // Semantic cache: only standalone questions (a follow-up's answer depends on the conversation)
+      const useCache = Boolean(cache && embedQuery && !history.length && !includeContext);
+      let questionVector = null;
+      if (useCache) {
+        const t = Date.now();
+        questionVector = await embedQuery(message);
+        const hit = cache.get(questionVector, message);
+        if (hit) {
+          const { route, intent, done } = hit.value;
+          yield { type: 'meta', route, intent, lowConfidence: false, relaxedFilters: false, cached: true };
+          yield { type: 'token', text: done.answer };
+          yield { type: 'done', ...done, cached: true, timings: { cache: Date.now() - t } };
+          return;
+        }
+      }
+      // Only general, confident answers are cached — never account answers or "I don't know"
+      const remember = (intent, done) => {
+        if (useCache) cache.set(questionVector, message, { route: done.route, intent, done: { answer: done.answer, citations: done.citations, mealIds: done.mealIds, route: done.route } });
+      };
+
       const retrieved = await retrieval.invoke({ question: message, history }, config);
       const { route, analysis, documents, lowConfidence, relaxedFilters, timings } = retrieved;
       yield { type: 'meta', route, intent: analysis.intent, lowConfidence, relaxedFilters };
 
       if (route === 'chitchat' || route === 'refuse') {
+        remember(analysis.intent, { answer: REPLIES[route], citations: [], mealIds: [], route });
         yield* fixedReply(REPLIES[route], route, { timings });
         return;
       }
@@ -89,7 +112,10 @@ export function createChatService({ retrieval, answerChain, agentFor = null, inc
         yield* fixedReply(REPLIES.unknown, route, { lowConfidence: true, timings });
         return;
       }
-      yield { type: 'done', ...parseCitations(text, documents), route, timings, ...contextOf(documents) };
+      const result = parseCitations(text, documents);
+      // A relaxed-filter answer ("nothing matched exactly, here are close options") isn't reused
+      if (!relaxedFilters) remember(analysis.intent, { ...result, route });
+      yield { type: 'done', ...result, route, timings, ...contextOf(documents) };
     },
   };
 }

@@ -6,6 +6,7 @@
 
 import fs from 'node:fs/promises';
 import db from '../firebase.js';
+import { notifyKnowledgeChange } from '../lib/knowledgeEvents.js';
 
 const MEALS = 'meals';
 const SEED_FILE = './data/available-meals.json';
@@ -52,6 +53,8 @@ async function loadFromFirestore() {
 
 function invalidate() {
   cache = null;
+  // Only the add/update/delete functions below call this, so it fires exactly on menu changes
+  notifyKnowledgeChange('menu');
 }
 
 /** All meals, in menu order. Falls back to the bundled JSON if Firestore fails. */

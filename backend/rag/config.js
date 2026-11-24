@@ -134,6 +134,21 @@ export const LLM = {
   },
 };
 
+// Semantic cache (answers to near-identical general questions). minSimilarity is the cosine
+// similarity of the two questions' embeddings, chosen with the golden set (scripts/rag-cache-check.js):
+// the most similar pair of DIFFERENT golden questions that pass the numbers/filter-words guard scores
+// 0.824; rewordings of the same question score 0.976–0.989 ("How long do refunds take?" vs "How long
+// does a refund take?"). 0.93 leaves a wide margin. The guard matters: "veg dishes under 300" vs
+// "non-veg dishes under 300" scores 0.922 on meaning alone, and only the guard keeps them apart.
+export const CACHE = {
+  get enabled() {
+    return process.env.RAG_CACHE !== 'off';
+  },
+  maxEntries: 300,
+  ttlMs: 6 * 60 * 60 * 1000, // also cleared whenever the index changes
+  minSimilarity: 0.93,
+};
+
 // /api/chat limits. Small on purpose: they bound cost (free-tier quotas), latency and prompt size.
 export const CHAT = {
   maxMessageChars: 500,

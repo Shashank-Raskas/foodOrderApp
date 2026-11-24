@@ -5,8 +5,10 @@ import dns from 'node:dns';
 // Force IPv4 for all DNS lookups — Render doesn't support outbound IPv6
 dns.setDefaultResultOrder('ipv4first');
 import { createApp } from './createApp.js';
-import { warmUp } from './rag/chat/index.js';
+import { warmUp, startLiveSync, chatHealth } from './rag/chat/index.js';
 import { startTracing, shutdownTracing } from './rag/observability/langfuse.js';
+import { onKnowledgeChange } from './lib/knowledgeEvents.js';
+import db from './firebase.js';
 
 // Langfuse tracing for the chatbot (only when its keys are set)
 if (startTracing()) console.log('[Chat] Langfuse tracing on');
@@ -28,6 +30,17 @@ app.listen(PORT, () => {
   warmUp()
     .then((ms) => ms && console.log(`[Chat] Models warmed up in ${ms} ms, RSS ${Math.round(process.memoryUsage().rss / 1048576)} MB`))
     .catch((err) => console.warn('[Chat] Warm-up failed (the first chat will load the models):', err.message));
+
+  // Re-index the chatbot in the background when an admin edits the menu or a review is posted
+  if (startLiveSync({ db, onKnowledgeChange })) console.log('[Chat] Live re-indexing on menu/review changes');
+
+  // Touch the vector index every 6 hours: Qdrant's free cluster pauses after a period of inactivity,
+  // and a quiet week (no chats) shouldn't take the chatbot down. Also logs if it becomes unreachable.
+  setInterval(() => {
+    chatHealth()
+      .then((h) => h.configured && !h.index?.ok && console.warn('[Chat] Vector index unreachable:', h.index?.error))
+      .catch(() => {});
+  }, 6 * 60 * 60 * 1000).unref();
 
   // ===================== Keep-Alive Self-Ping =====================
   // Ping ourselves every 10 minutes to prevent Render free-tier spin-down.
