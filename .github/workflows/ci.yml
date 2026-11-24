@@ -12,11 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          # The exact version the project is developed and tested with
+          node-version: 20.20.2
           cache: npm
           cache-dependency-path: |
             package-lock.json
@@ -30,17 +31,23 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # The github-actions reporter turns each failing test into an annotation on the run, so the
+      # failure is visible on the run's page (and through the API) without opening the raw log
       - name: Frontend tests
-        run: npm test
+        run: npm test -- --ci --reporters=default --reporters=github-actions
 
+      # The remaining checks still run when an earlier one fails, so one run reports every problem
       - name: Backend tests
-        run: npm run test:backend
+        if: ${{ !cancelled() }}
+        run: npm run test:backend -- --ci --reporters=default --reporters=github-actions
 
       # The embedding model and reranker (~60 MB) are downloaded once and cached between runs
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
+        if: ${{ !cancelled() }}
         with:
           path: backend/rag/.models
           key: rag-models-${{ hashFiles('backend/rag/config.js') }}
 
       - name: Chatbot retrieval regression check
+        if: ${{ !cancelled() }}
         run: npm run rag:eval:offline --prefix backend
