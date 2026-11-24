@@ -1,0 +1,46 @@
+# Runs on every push and pull request: lint, frontend + backend unit tests, and the chatbot's
+# retrieval regression check. Everything here is offline: no API keys or secrets are needed.
+name: CI
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+
+      - name: Install
+        run: |
+          npm ci
+          npm ci --prefix backend
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Frontend tests
+        run: npm test
+
+      - name: Backend tests
+        run: npm run test:backend
+
+      # The embedding model and reranker (~60 MB) are downloaded once and cached between runs
+      - uses: actions/cache@v4
+        with:
+          path: backend/rag/.models
+          key: rag-models-${{ hashFiles('backend/rag/config.js') }}
+
+      - name: Chatbot retrieval regression check
+        run: npm run rag:eval:offline --prefix backend

@@ -30,7 +30,10 @@ const accountCitations = (toolsUsed) =>
  * answerChain: the phase 4 grounded answer chain (Runnable)
  * agentFor:    (userId) → the account agent graph with tools bound to that user (phase 5)
  */
-export function createChatService({ retrieval, answerChain, agentFor = null }) {
+export function createChatService({ retrieval, answerChain, agentFor = null, includeContext = false }) {
+  // Evaluation only: attach the exact sources the answer was generated from, so a judge can check
+  // faithfulness. Never enabled for the API (the route uses the default), so clients don't get it.
+  const contextOf = (documents) => (includeContext ? { context: documents.map((d, i) => ({ n: i + 1, id: d.metadata.id, text: d.metadata.context ?? d.pageContent })) } : {});
   async function* fixedReply(text, route, extra = {}) {
     yield { type: 'token', text };
     yield { type: 'done', answer: text, citations: [], mealIds: [], route, ...extra };
@@ -86,7 +89,7 @@ export function createChatService({ retrieval, answerChain, agentFor = null }) {
         yield* fixedReply(REPLIES.unknown, route, { lowConfidence: true, timings });
         return;
       }
-      yield { type: 'done', ...parseCitations(text, documents), route, timings };
+      yield { type: 'done', ...parseCitations(text, documents), route, timings, ...contextOf(documents) };
     },
   };
 }

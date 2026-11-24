@@ -127,6 +127,15 @@ describe('chat service', () => {
     }
   });
 
+  it('attaches the sources used only when the eval asks for them', async () => {
+    const retrieval = retrievalReturning({ route: 'retrieve', documents: DOCS });
+    const plain = (await collect(createChatService({ retrieval, answerChain }).chat({ message: 'bank refund?' }))).at(-1);
+    expect(plain.context).toBeUndefined();
+    const evalChain = createAnswerChain(new FakeListChatModel({ responses: ['Bank transfers take 7–10 business days [1].'] }));
+    const withContext = (await collect(createChatService({ retrieval, answerChain: evalChain, includeContext: true }).chat({ message: 'bank refund?' }))).at(-1);
+    expect(withContext.context[0]).toEqual({ n: 1, id: DOCS[0].metadata.id, text: 'Refund Policy > 4. Refund Timelines\nFULL SECTION' });
+  });
+
   it('an empty LLM answer falls back to "I don\'t know"', async () => {
     const empty = RunnableLambda.from(() => '');
     const events = await collect(createChatService({ retrieval: retrievalReturning({ route: 'retrieve', documents: DOCS }), answerChain: empty }).chat({ message: 'x' }));

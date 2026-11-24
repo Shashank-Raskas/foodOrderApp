@@ -13,7 +13,9 @@
     "rag:chunks": "node scripts/rag-ingest.js",
     "rag:ingest": "node scripts/rag-index.js",
     "rag:search": "node scripts/rag-search.js",
-    "rag:eval": "node scripts/rag-eval.js"
+    "rag:eval": "node scripts/rag-eval.js",
+    "rag:eval:offline": "node scripts/rag-eval-offline.js",
+    "rag:eval:answers": "node scripts/rag-eval-answers.js"
   },
   "engines": {
     "node": ">=20 <23"

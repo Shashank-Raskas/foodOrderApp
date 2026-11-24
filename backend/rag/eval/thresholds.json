@@ -1,0 +1,7 @@
+{
+  "_comment": "Minimums for `npm run rag:eval:offline` (in-memory index, rule analysis, golden set v2). Baseline 2026-11-24: Recall@5 95.3%, Hit@5 98.7%, MRR 0.947, routing 90/90. Set ~3 points below so harmless changes pass and real regressions fail. Raise them when quality improves.",
+  "recallAt5": 0.92,
+  "hitAt5": 0.95,
+  "mrr": 0.91,
+  "routingAccuracy": 0.97
+}

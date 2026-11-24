@@ -22,7 +22,7 @@ let override = null;
 
 export const isChatConfigured = () => Boolean(override) || REQUIRED.every((k) => process.env[k]);
 
-function build() {
+function build(serviceOptions = {}) {
   const embeddings = new BgeEmbeddings();
   const reranker = new CrossEncoderReranker();
   const store = liveStore({ client: createQdrantClient(), embeddings });
@@ -31,7 +31,12 @@ function build() {
   const toolModel = createToolModel();
   // A fresh graph per request, with tools bound to that request's signed-in user (cheap: no I/O)
   const agentFor = (userId) => createAccountAgent({ model: toolModel, tools: createAccountTools({ userId }) });
-  return { embeddings, reranker, service: createChatService({ retrieval, answerChain: createAnswerChain(createAnswerModel()), agentFor }) };
+  return { embeddings, reranker, service: createChatService({ retrieval, answerChain: createAnswerChain(createAnswerModel()), agentFor, ...serviceOptions }) };
+}
+
+/** A separate chat service for the answer-quality eval: same components, plus the sources used. */
+export function createEvalChatService() {
+  return build({ includeContext: true }).service;
 }
 
 export function getChatService() {

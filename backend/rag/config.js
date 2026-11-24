@@ -80,12 +80,16 @@ export const RETRIEVAL = {
   // "similar" results are usually *all* correct (four biryanis for "do you have biryani?").
   // So MMR is off by default (see DEFAULT_STAGES) and 0.9 is the setting when it is switched on.
   mmrLambda: 0.9,
-  // "I don't know" threshold on the best cross-encoder score (0–1), for policy questions only.
-  // Measured (batch 1): unanswerable questions ≤ 9e-5, weakest answerable policy question 4.7e-3,
-  // so 5e-4 separates them with margin. Not applied to menu questions: the model (trained on web
-  // search Q&A) scores vague browsing like "something sweet under 200" as low as nonsense, even
-  // when the results are right — there the grounded answer prompt handles "nothing matches".
-  minRelevance: 5e-4,
+  // "I don't know" short-cut on the best cross-encoder score (0–1), for policy questions only: below
+  // it, the fixed "I couldn't find that" reply is sent without calling the answer LLM.
+  // History: 5e-4 (batch 1) wrongly refused "How do I contact customer care?" (3.4e-4); and in
+  // batch 2 "What happens if I'm not home when the rider arrives?" scored 1.85e-5 — inside the
+  // unanswerable range (1.3–1.7e-5) — so no threshold separates them. The answer-quality eval then
+  // showed the grounded answer LLM itself declined 6/6 unanswerable questions. So the threshold now
+  // only catches near-zero matches, and borderline questions get a real (grounded) answer.
+  // Not applied to menu questions: the model (trained on web search Q&A) scores vague browsing
+  // like "something sweet under 200" as low as nonsense, even when the results are right.
+  minRelevance: 1e-5,
   minRelevanceIntents: ['policy'],
   // Query analysis: 'llm' = Gemini → Groq for every question (best quality: 96.6% vs 93.8%
   // Recall@5 on batch 1, ~2 s); 'auto' = LLM only for follow-ups, rules otherwise (~0 ms).
@@ -102,8 +106,11 @@ export const LLM = {
   get fastModel() {
     return process.env.GEMINI_FAST_MODEL || 'gemini-3.1-flash-lite';
   },
+  // qwen, not gpt-oss-20b: the answer-quality eval showed gpt-oss fills unused optional fields with
+  // null (rejected by the schema) — 0/4 valid analyses vs 4/4 for qwen — so whenever Gemini was
+  // slow, the fallback failed too and analysis dropped to the rules.
   get fastFallbackModel() {
-    return process.env.GROQ_FAST_MODEL || 'openai/gpt-oss-20b';
+    return process.env.GROQ_FAST_MODEL || 'qwen/qwen3.8-27b';
   },
   // Answer models, picked by a streaming test on the free tier (time to first token):
   // gemini-3.1-flash-lite ~0.6 s; gemini-3.5-flash ~18 s; gemini-3.8-flash 503 "high demand";

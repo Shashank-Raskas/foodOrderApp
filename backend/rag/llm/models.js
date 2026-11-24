@@ -55,6 +55,17 @@ export function createToolModel() {
   };
 }
 
+/**
+ * The judge for the answer-quality eval: Groq's gpt-oss-120b, a different model family from the
+ * Gemini answerer, so the judge isn't grading its own style. Falls back to Gemini without a Groq key.
+ */
+export function createJudgeModel() {
+  if (process.env.GROQ_API_KEY) {
+    return new ChatGroq({ ...common, maxRetries: 3, model: process.env.GROQ_JUDGE_MODEL || 'openai/gpt-oss-120b', apiKey: process.env.GROQ_API_KEY });
+  }
+  return new ChatGoogleGenerativeAI({ ...common, maxRetries: 3, model: LLM.answerModel, apiKey: requireEnv('GEMINI_API_KEY') });
+}
+
 /** primary.withStructuredOutput(schema), failing over to the fallback model with the same schema. */
 export function structuredWithFallback({ primary, fallback }, schema, name) {
   return withTimedFallback(
